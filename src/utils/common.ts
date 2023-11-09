@@ -3,4 +3,5 @@ export const isExtension = () =>
 
 export const appID = "request-mod";
 
-export const storageKeyPrefix = `${appID}_`;
+export const storageKeyPrefix = `${appID}-db_`;
+export const storageLastIdKey = `${appID}-lastid`;

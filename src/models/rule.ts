@@ -3,7 +3,7 @@ import { Header } from "./header";
 
 export class Rule {
   constructor(
-    public id: string = "",
+    public id: number = 0,
     public name: string = "",
     public headers: Header[] = [],
     public urlPattern: string = "",
@@ -27,15 +27,16 @@ export class RuleSet {
     return this.store.getAll();
   };
 
-  getRuleById = (id: string) => {
+  getRuleById = (id: number) => {
     return this.store.get(id);
   };
 
-  createRule = (name: string) => {
-    const uuid = crypto.randomUUID();
-    const rule = new Rule(uuid, name);
+  createRule = async (name: string) => {
+    const id = await this.store.getNextId();
 
-    return this.store.set(uuid, rule);
+    const rule = new Rule(id, name);
+
+    return this.store.set(id, rule);
   };
 
   saveRule = (rule: Rule) => {
