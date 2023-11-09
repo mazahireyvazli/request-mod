@@ -1,5 +1,5 @@
 import { CDBInput, CDBBtn, CDBContainer } from "cdbreact";
-import { useState } from "react";
+import React, { useState } from "react";
 import { RuleSet } from "../models/rule";
 import { useNavigate } from "react-router-dom";
 
@@ -12,10 +12,9 @@ export const CreateRuleForm = () => {
     <CDBContainer>
       <CDBInput
         material
-        hint="Rule name"
         type="text"
         value={ruleName}
-        onChange={(e) => {
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
           setRuleName(e.target.value);
         }}
       />

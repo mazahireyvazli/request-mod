@@ -1,5 +1,7 @@
 import { PropsWithChildren, ReactNode } from "react";
+import cx from "classnames";
 import { Sidebar } from "./Sidebar";
+import { isExtension } from "../utils/common";
 
 type LayoutProps = {
   title: string;
@@ -12,7 +14,11 @@ export const Layout = ({
   children,
 }: PropsWithChildren<LayoutProps>) => {
   return (
-    <>
+    <div
+      className={cx({
+        "extension-wrapper": isExtension(),
+      })}
+    >
       <header></header>
       <div
         style={{ display: "flex", height: "100vh", overflow: "scroll initial" }}
@@ -26,6 +32,6 @@ export const Layout = ({
         </main>
       </div>
       <footer></footer>
-    </>
+    </div>
   );
 };

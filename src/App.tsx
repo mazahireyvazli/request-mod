@@ -1,6 +1,6 @@
 import {
   createBrowserRouter,
-  createMemoryRouter,
+  createHashRouter,
   RouterProvider,
 } from "react-router-dom";
 
@@ -26,7 +26,7 @@ const routes = [
 
 const router = !isExtension()
   ? createBrowserRouter(routes)
-  : createMemoryRouter(routes);
+  : createHashRouter(routes);
 
 export const App = () => {
   return <RouterProvider router={router} />;

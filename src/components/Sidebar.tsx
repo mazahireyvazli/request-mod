@@ -11,6 +11,7 @@ import {
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Rule, RuleSet } from "../models/rule";
+import { isExtension } from "../utils/common";
 
 export const Sidebar = () => {
   const location = useLocation();
@@ -33,7 +34,7 @@ export const Sidebar = () => {
       backgroundColor="#333"
       breakpoint={720}
       minWidth="80px"
-      maxWidth="360px"
+      maxWidth={isExtension() ? "180px" : "360px"}
     >
       <CDBSidebarHeader prefix={<i className="fa fa-bars fa-large"></i>}>
         <a
