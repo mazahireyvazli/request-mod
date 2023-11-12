@@ -23,7 +23,7 @@ export const RulePage = () => {
 
   useEffect(() => {
     RuleSet.getInstance()
-      .getRuleById(id)
+      .getRuleById(Number(id))
       .then((data) => {
         setRule(data);
       });

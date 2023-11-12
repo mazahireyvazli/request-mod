@@ -41,7 +41,7 @@ export class ChromeStorage<T> implements GlobalStorage<T> {
   async get(id: number) {
     return new Promise<T>((resolve, _reject) => {
       chrome.storage.sync.get(this.getPrefixedKey(id), (results) => {
-        return resolve(results[id]);
+        return resolve(results[this.getPrefixedKey(id)]);
       });
     });
   }
