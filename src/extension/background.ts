@@ -15,7 +15,7 @@ export const applyRules = async () => {
       })),
     },
     condition: {
-      urlFilter: rule.urlPattern,
+      regexFilter: rule.urlPattern,
       resourceTypes: Object.values(chrome.declarativeNetRequest.ResourceType),
     },
   }));

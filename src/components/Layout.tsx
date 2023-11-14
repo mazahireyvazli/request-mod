@@ -1,7 +1,8 @@
 import { PropsWithChildren, ReactNode } from "react";
-import cx from "classnames";
-import { Sidebar } from "./Sidebar";
+import { clsx } from "clsx";
+import { Sidenav } from "./Sidenav";
 import { isExtension } from "../utils/common";
+import { Topnav } from "./Topnav";
 
 type LayoutProps = {
   title: string;
@@ -15,19 +16,26 @@ export const Layout = ({
 }: PropsWithChildren<LayoutProps>) => {
   return (
     <div
-      className={cx({
+      className={clsx({
         "extension-wrapper": isExtension(),
       })}
     >
-      <header></header>
-      <div
-        style={{ display: "flex", height: "100vh", overflow: "scroll initial" }}
-      >
-        <Sidebar />
-        <main role="main" style={{ flex: 1, padding: "20px" }}>
-          {titleElement ? titleElement : <h1>{title}</h1>}
+      <header>
+        <Topnav />
+      </header>
+      <div className={clsx("flex h-screen")}>
+        <Sidenav />
+        <main role="main" className={clsx("flex-1 p-4 sm:ml-64 mt-14")}>
+          {titleElement ? (
+            titleElement
+          ) : (
+            <h1 className="text-2xl font-extrabold leading-none tracking-tight text-gray-900 md:text-3xl lg:text-4xl dark:text-white">
+              {title}
+            </h1>
+          )}
 
-          <hr />
+          <hr className="h-px my-4 bg-gray-200 border-0 dark:bg-gray-700" />
+
           {children}
         </main>
       </div>

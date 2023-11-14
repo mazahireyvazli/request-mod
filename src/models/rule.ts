@@ -34,7 +34,7 @@ export class RuleSet {
   createRule = async (name: string) => {
     const id = await this.store.getNextId();
 
-    const rule = new Rule(id, name);
+    const rule = new Rule(id, name, [new Header()], "*");
 
     return this.store.set(id, rule);
   };
