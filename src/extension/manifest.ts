@@ -5,7 +5,7 @@ export const manifest: chrome.runtime.ManifestV3 = {
   description: packageJson.description,
   version: packageJson.version,
   manifest_version: 3,
-  background: { service_worker: "src/extension/background.ts" },
+  // background: { service_worker: "src/extension/background.ts", type: "module" },
   //   icons: {
   //     "16": "resources/icons/16x16.png",
   //     "48": "resources/icons/48x48.png",

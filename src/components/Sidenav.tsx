@@ -45,9 +45,34 @@ export const Sidenav = () => {
         <ul className="my-2 font-medium">
           {rules.map((rule) => {
             return (
-              <li key={rule.id}>
+              <li key={rule.id} className="flex items-center">
+                <input
+                  className="mr-3"
+                  type="checkbox"
+                  checked={rule.active}
+                  onChange={(e) => {
+                    setRules((prevState) => {
+                      const newState = prevState.map((r) => {
+                        if (r.id === rule.id) {
+                          const updatedRule = {
+                            ...r,
+                            active: e.target.checked,
+                          };
+
+                          RuleSet.getInstance().saveRule(updatedRule);
+
+                          return updatedRule;
+                        }
+
+                        return r;
+                      });
+
+                      return newState;
+                    });
+                  }}
+                />
                 <Link
-                  className="flex items-center p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 group"
+                  className="flex-1 p-2 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
                   to={`/rules/${rule.id}`}
                 >
                   {rule.name}

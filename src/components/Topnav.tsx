@@ -26,13 +26,24 @@ export const Topnav = () => {
                 />
               </svg>
             </button>
-            <a href="/" className="flex ms-2 md:me-24">
-              <img
-                src="https://flowbite.com/docs/images/logo.svg"
-                className="h-8 me-3"
-                alt="Logo"
-              />
-              <span className="self-center text-xl font-semibold sm:text-2xl whitespace-nowrap dark:text-white">
+            <a href="/" className="flex items-center ms-2 md:me-24">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fillRule="evenodd"
+                strokeLinejoin="round"
+                strokeMiterlimit={2}
+                clipRule="evenodd"
+                viewBox="0 0 144 144"
+                width={26}
+                height={26}
+                className="fill-sky-600"
+              >
+                <path d="M120.404 65.851c15.065-15.064 15.065-39.488 0-54.553-15.054-15.054-39.498-15.054-54.553 0-15.064 15.065-15.064 39.489 0 54.553l20.458-20.457a9.644 9.644 0 1 1 13.638 0l20.457 20.457Z" />
+                <path d="M65.851 120.404c15.065 15.065 39.489 15.065 54.553 0 15.055-15.054 15.055-39.498 0-54.553-15.064-15.064-39.488-15.064-54.553 0l20.458 20.458a9.644 9.644 0 1 1 0 13.638l-20.458 20.457Z" />
+                <path d="M11.298 65.851c-15.064 15.065-15.064 39.489 0 54.553 15.055 15.055 39.499 15.055 54.553 0 15.065-15.064 15.065-39.488 0-54.553L45.394 86.309a9.644 9.644 0 1 1-13.638 0L11.298 65.851Z" />
+                <path d="M65.851 11.298c-15.064-15.064-39.488-15.064-54.553 0-15.054 15.055-15.054 39.499 0 54.553 15.065 15.065 39.489 15.065 54.553 0L45.394 45.394a9.644 9.644 0 1 1 0-13.638l20.457-20.458Z" />
+              </svg>
+              <span className="self-center ml-2 text-xl font-semibold whitespace-nowrap dark:text-white">
                 Request Mod
               </span>
             </a>

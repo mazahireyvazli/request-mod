@@ -7,6 +7,7 @@ export class Rule {
     public name: string = "",
     public headers: Header[] = [],
     public urlPattern: string = "",
+    public active = true,
   ) {}
 }
 
