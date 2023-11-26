@@ -1,17 +1,18 @@
 import fs from "fs";
 import { PluginOption, defineConfig, splitVendorChunkPlugin } from "vite";
 import react from "@vitejs/plugin-react";
+import { crx } from "@crxjs/vite-plugin";
 
 import packageJSON from "./package.json";
 import { manifest } from "./src/extension/manifest";
 
 export const cdnPackages = {
-  react: `https://cdn.jsdelivr.net/npm/react@${packageJSON.dependencies.react}/+esm`,
-  "react-dom/client": `https://cdn.jsdelivr.net/npm/react-dom@${packageJSON.dependencies.react}/client/+esm`,
-  lodash: `https://cdn.jsdelivr.net/npm/lodash-es@${packageJSON.dependencies.lodash}/+esm`,
-  "react-router-dom": `https://cdn.jsdelivr.net/npm/react-router-dom@${packageJSON.dependencies["react-router-dom"]}/+esm`,
-  cdbreact: `https://cdn.jsdelivr.net/npm/cdbreact@${packageJSON.dependencies["cdbreact"]}/dist/index.min.js`,
-  clsx: `https://cdn.jsdelivr.net/npm/clsx@${packageJSON.dependencies.clsx}/+esm`,
+  // react: `https://cdn.jsdelivr.net/npm/react@${packageJSON.dependencies.react}/+esm`,
+  // "react-dom/client": `https://cdn.jsdelivr.net/npm/react-dom@${packageJSON.dependencies.react}/client/+esm`,
+  // lodash: `https://cdn.jsdelivr.net/npm/lodash-es@${packageJSON.dependencies.lodash}/+esm`,
+  // "react-router-dom": `https://cdn.jsdelivr.net/npm/react-router-dom@${packageJSON.dependencies["react-router-dom"]}/+esm`,
+  // cdbreact: `https://cdn.jsdelivr.net/npm/cdbreact@${packageJSON.dependencies["cdbreact"]}/dist/index.min.js`,
+  // clsx: `https://cdn.jsdelivr.net/npm/clsx@${packageJSON.dependencies.clsx}/+esm`,
 };
 
 function createExtensionManifest(): PluginOption {
@@ -29,7 +30,7 @@ function createExtensionManifest(): PluginOption {
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), createExtensionManifest(), splitVendorChunkPlugin()],
+  plugins: [react(), crx({ manifest }), splitVendorChunkPlugin()],
   build: {
     manifest: "app-manifest.json",
     rollupOptions: {
@@ -40,9 +41,6 @@ export default defineConfig({
         paths: {
           ...cdnPackages,
         },
-        // entryFileNames: `assets/[name].js`,
-        // chunkFileNames: `assets/[name].js`,
-        // assetFileNames: `assets/[name].[ext]`,
       },
       input: {
         index: "index.html",

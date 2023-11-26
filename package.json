@@ -21,6 +21,7 @@
     "react-router-dom": "^6.18.0"
   },
   "devDependencies": {
+    "@crxjs/vite-plugin": "^1.0.14",
     "@types/chrome": "^0.0.248",
     "@types/lodash": "^4.14.200",
     "@types/node": "^20.9.0",

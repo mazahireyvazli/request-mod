@@ -4,33 +4,49 @@ export const applyRules = async () => {
   const ruleset = await RuleSet.getInstance().getRules();
 
   const rules: chrome.declarativeNetRequest.Rule[] = ruleset
-    .filter((rule) => rule.active === true)
+    .filter(
+      (rule) =>
+        rule.active === true &&
+        rule.headers.filter((header) => header.active === true && header.name)
+          .length > 0,
+    )
     .map((rule) => ({
       id: rule.id,
       priority: 1,
       action: {
         type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
-        requestHeaders: rule.headers.map((header) => ({
-          operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-          header: header.name,
-          value: header.value,
-        })),
+        requestHeaders: rule.headers
+          .filter((header) => header.active === true)
+          .map((header) => ({
+            operation: chrome.declarativeNetRequest.HeaderOperation.SET,
+            header: header.name,
+            value: header.value,
+          })),
       },
       condition: {
-        regexFilter: rule.urlPattern,
+        urlFilter: rule.urlPattern,
         resourceTypes: Object.values(chrome.declarativeNetRequest.ResourceType),
       },
     }));
 
   chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: rules.map((rule) => rule.id),
+    removeRuleIds: ruleset.map((rule) => rule.id),
     addRules: rules,
   });
 };
 
-applyRules();
+chrome.runtime.onInstalled.addListener(() => {
+  console.log("setting initial rules");
+  applyRules();
+});
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg === "applyRules") {
+    console.log("applyRules msg received");
+    applyRules();
+  }
+});
 
-setInterval(() => {
+chrome.storage.sync.onChanged.addListener(() => {
   console.log("updating rules");
   applyRules();
-}, 5 * 1000);
+});

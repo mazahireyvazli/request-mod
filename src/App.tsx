@@ -9,6 +9,8 @@ import { CreateRulePage } from "./pages/CreateRulePage";
 import { HomePage } from "./pages/HomePage";
 import { RulePage } from "./pages/RulePage";
 import { isExtension, storageLastPageKey } from "./utils/common";
+import { RuleSetContext, ruleSetStateHandler } from "./utils/ruleset-context";
+import { RuleSet } from "./models/rule";
 
 const routes: RouteObject[] = [
   {
@@ -34,5 +36,9 @@ router.subscribe((state) => {
 });
 
 export const App = () => {
-  return <RouterProvider router={router} />;
+  return (
+    <RuleSetContext.Provider value={ruleSetStateHandler(RuleSet.getInstance())}>
+      <RouterProvider router={router} />
+    </RuleSetContext.Provider>
+  );
 };

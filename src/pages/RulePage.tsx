@@ -1,33 +1,29 @@
-import { useEffect, useState } from "react";
-import { Toast, Tooltip } from "flowbite-react";
-import { Layout } from "../components/Layout";
-import { useParams } from "react-router-dom";
-import { Rule, RuleSet } from "../models/rule";
-import { useUpdateState } from "../utils/hooks";
-import { Header } from "../models/header";
 import { initFlowbite } from "flowbite";
+import { Toast, Tooltip } from "flowbite-react";
+import { useContext, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { Layout } from "../components/Layout";
+import { Header } from "../models/header";
+import { RuleSetContext } from "../utils/ruleset-context";
 
 export const RulePage = () => {
   const { id } = useParams();
 
-  if (!id) {
+  const parsedId = Number(id);
+
+  if (!parsedId) {
     return "page not found";
   }
 
-  const [rule, updateRule, setRule] = useUpdateState<Rule | null>(null);
+  const { rules, updateRuleField, deleteRuleHeader, saveRule } =
+    useContext(RuleSetContext);
+  const rule = rules.find((r) => r.id === parsedId);
+
   const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     initFlowbite();
   }, []);
-
-  useEffect(() => {
-    RuleSet.getInstance()
-      .getRuleById(Number(id))
-      .then((data) => {
-        setRule(data);
-      });
-  }, [id]);
 
   if (!rule) {
     return "rule not found";
@@ -52,19 +48,17 @@ export const RulePage = () => {
               required
               value={rule.name}
               onChange={(e) => {
-                updateRule("name", e.target.value);
+                updateRuleField(parsedId, "name", e.target.value);
               }}
             />
             <button
               onClick={() => {
-                RuleSet.getInstance()
-                  .saveRule(rule)
-                  .then(() => {
-                    setShowToast(true);
-                    setTimeout(() => {
-                      setShowToast(false);
-                    }, 1500);
-                  });
+                saveRule(rule).then(() => {
+                  setShowToast(true);
+                  setTimeout(() => {
+                    setShowToast(false);
+                  }, 1500);
+                });
               }}
               className="text-white absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium  text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
             >
@@ -93,10 +87,10 @@ export const RulePage = () => {
           <table className="table-auto w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
               <tr>
-                <th className="px-3 md:px-5 py-2 md:py-3 w-px"></th>
-                <th className="px-3 md:px-5 py-2 md:py-3">Name</th>
-                <th className="px-3 md:px-5py-2 md:py-3">Value</th>
-                <th className="px-3 md:px-5 py-2 md:py-3 w-px"></th>
+                <th className="px-2 md:px-3 py-2 md:py-3 w-px"></th>
+                <th className="px-2 md:px-3 py-2 md:py-3">Name</th>
+                <th className="px-2 md:px-3py-2 md:py-3">Value</th>
+                <th className="px-2 md:px-3 py-2 md:py-3 w-px"></th>
               </tr>
             </thead>
             <tbody>
@@ -106,13 +100,14 @@ export const RulePage = () => {
                     key={`${index}`}
                     className="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700"
                   >
-                    <td className="px-3 md:px-5 py-2 md:py-3 w-px">
+                    <td className="px-2 md:px-3 py-2 md:py-3 w-px">
                       <div className="relative">
                         <input
                           type="checkbox"
                           checked={header.active}
                           onChange={(e) => {
-                            updateRule(
+                            updateRuleField(
+                              parsedId,
                               `headers[${index}].active`,
                               e.target.checked,
                             );
@@ -120,38 +115,41 @@ export const RulePage = () => {
                         />
                       </div>
                     </td>
-                    <td className="px-3 md:px-5 py-2 md:py-3">
+                    <td className="px-2 md:px-3 py-2 md:py-3">
                       <input
                         className="block w-full p-2 text-sm text-gray-900 border border-gray-300 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                         type="text"
                         placeholder="Header name"
                         value={header.name}
                         onChange={(e) => {
-                          updateRule(`headers[${index}].name`, e.target.value);
+                          updateRuleField(
+                            parsedId,
+                            `headers[${index}].name`,
+                            e.target.value,
+                          );
                         }}
                       />
                     </td>
-                    <td className="px-3 md:px-5 py-2 md:py-3">
+                    <td className="px-2 md:px-3 py-2 md:py-3">
                       <input
                         className="block w-full p-2 text-sm text-gray-900 border border-gray-300 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                         type="text"
                         placeholder="Header value"
                         value={header.value}
                         onChange={(e) => {
-                          updateRule(`headers[${index}].value`, e.target.value);
+                          updateRuleField(
+                            parsedId,
+                            `headers[${index}].value`,
+                            e.target.value,
+                          );
                         }}
                       />
                     </td>
 
-                    <td className="px-3 md:px-5 py-2 md:py-3 w-px">
+                    <td className="px-2 md:px-3 py-2 md:py-3 w-px">
                       <button
                         onClick={() => {
-                          setRule({
-                            ...rule,
-                            headers: rule.headers.filter((v) => {
-                              return v !== header;
-                            }),
-                          });
+                          deleteRuleHeader(header);
                         }}
                       >
                         <svg
@@ -180,8 +178,11 @@ export const RulePage = () => {
               className="text-white end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
               type="button"
               onClick={() => {
-                const header = new Header();
-                updateRule(`headers[${rule.headers.length}]`, header);
+                updateRuleField(
+                  parsedId,
+                  `headers[${rule.headers.length}]`,
+                  new Header(),
+                );
               }}
             >
               Add new header
@@ -202,14 +203,17 @@ export const RulePage = () => {
 
         <hr className="h-px my-4 bg-gray-200 border-0 dark:bg-gray-700" />
 
-        <Tooltip content="URL regexp to apply the rule. Accepts RE2 syntax.">
+        <Tooltip
+          content="URL regexp to apply the rule. Accepts RE2 syntax."
+          placement="bottom-start"
+        >
           <input
             className="block w-full p-2 text-sm text-gray-900 border border-gray-300 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             type="text"
             placeholder="http://localhost:8080"
             value={rule.urlPattern}
             onChange={(e) => {
-              updateRule(`urlPattern`, e.target.value);
+              updateRuleField(parsedId, `urlPattern`, e.target.value);
             }}
           />
         </Tooltip>

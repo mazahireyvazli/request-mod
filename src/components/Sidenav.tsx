@@ -1,21 +1,11 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect } from "react";
 
-import { Link, useLocation } from "react-router-dom";
-import { Rule, RuleSet } from "../models/rule";
 import { initFlowbite } from "flowbite";
+import { Link } from "react-router-dom";
+import { RuleSetContext } from "../utils/ruleset-context";
 
 export const Sidenav = () => {
-  const location = useLocation();
-
-  const [rules, setRules] = useState<Rule[]>([]);
-
-  useEffect(() => {
-    RuleSet.getInstance()
-      .getRules()
-      .then((data) => {
-        setRules(data);
-      });
-  }, [location]);
+  const { rules, setRuleStatus } = useContext(RuleSetContext);
 
   useEffect(() => {
     initFlowbite();
@@ -51,24 +41,7 @@ export const Sidenav = () => {
                   type="checkbox"
                   checked={rule.active}
                   onChange={(e) => {
-                    setRules((prevState) => {
-                      const newState = prevState.map((r) => {
-                        if (r.id === rule.id) {
-                          const updatedRule = {
-                            ...r,
-                            active: e.target.checked,
-                          };
-
-                          RuleSet.getInstance().saveRule(updatedRule);
-
-                          return updatedRule;
-                        }
-
-                        return r;
-                      });
-
-                      return newState;
-                    });
+                    setRuleStatus(rule, e.target.checked);
                   }}
                 />
                 <Link
