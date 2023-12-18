@@ -2,10 +2,10 @@ import { useContext, useEffect } from "react";
 
 import { initFlowbite } from "flowbite";
 import { Link } from "react-router-dom";
-import { RuleSetContext } from "../utils/ruleset-context";
+import { appContext } from "../utils/app-context";
 
 export const Sidenav = () => {
-  const { rules, setRuleStatus } = useContext(RuleSetContext);
+  const { rules, setRuleStatus } = useContext(appContext);
 
   useEffect(() => {
     initFlowbite();

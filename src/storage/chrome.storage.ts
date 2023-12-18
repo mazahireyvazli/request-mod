@@ -59,4 +59,12 @@ export class ChromeStorage<T> implements GlobalStorage<T> {
       });
     });
   }
+
+  async delete(id: number): Promise<number> {
+    return new Promise<number>((resolve, _reject) => {
+      chrome.storage.sync.remove(this.getPrefixedKey(id), () => {
+        resolve(1);
+      });
+    });
+  }
 }

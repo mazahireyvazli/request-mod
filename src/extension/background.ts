@@ -1,7 +1,10 @@
-import { RuleSet } from "../models/rule";
+import { RuleStore } from "../models/rule";
+import { EnvVarStore } from "../models/variables";
 
 export const applyRules = async () => {
-  const ruleset = await RuleSet.getInstance().getRules();
+  const ruleset = await RuleStore.getInstance().getAll();
+  const envs = await EnvVarStore.getInstance().getAll();
+  const activeEnvVars = envs.find((e) => e.active)?.getVarsKV();
 
   const rules: chrome.declarativeNetRequest.Rule[] = ruleset
     .filter(
@@ -19,8 +22,8 @@ export const applyRules = async () => {
           .filter((header) => header.active === true)
           .map((header) => ({
             operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-            header: header.name,
-            value: header.value,
+            header: header.getCompiledName(activeEnvVars),
+            value: header.getCompiledValue(activeEnvVars),
           })),
       },
       condition: {
@@ -39,6 +42,7 @@ chrome.runtime.onInstalled.addListener(() => {
   console.log("setting initial rules");
   applyRules();
 });
+
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg === "applyRules") {
     console.log("applyRules msg received");

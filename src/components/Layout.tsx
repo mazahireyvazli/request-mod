@@ -5,7 +5,7 @@ import { isExtension } from "../utils/common";
 import { Topnav } from "./Topnav";
 
 type LayoutProps = {
-  title: string;
+  title?: string;
   titleElement?: ReactNode;
 };
 

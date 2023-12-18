@@ -9,8 +9,8 @@ import { CreateRulePage } from "./pages/CreateRulePage";
 import { HomePage } from "./pages/HomePage";
 import { RulePage } from "./pages/RulePage";
 import { isExtension, storageLastPageKey } from "./utils/common";
-import { RuleSetContext, ruleSetStateHandler } from "./utils/ruleset-context";
-import { RuleSet } from "./models/rule";
+import { appContext, appStateHandler } from "./utils/app-context";
+import { VariablesPage } from "./pages/Variables";
 
 const routes: RouteObject[] = [
   {
@@ -18,12 +18,16 @@ const routes: RouteObject[] = [
     element: <HomePage />,
   },
   {
-    path: "/rules/:id",
-    element: <RulePage />,
-  },
-  {
     path: "/rules/create",
     element: <CreateRulePage />,
+  },
+  {
+    path: "/rules/variables",
+    element: <VariablesPage />,
+  },
+  {
+    path: "/rules/:id",
+    element: <RulePage />,
   },
 ];
 
@@ -37,8 +41,8 @@ router.subscribe((state) => {
 
 export const App = () => {
   return (
-    <RuleSetContext.Provider value={ruleSetStateHandler(RuleSet.getInstance())}>
+    <appContext.Provider value={appStateHandler()}>
       <RouterProvider router={router} />
-    </RuleSetContext.Provider>
+    </appContext.Provider>
   );
 };

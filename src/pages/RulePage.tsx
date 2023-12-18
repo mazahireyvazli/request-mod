@@ -4,7 +4,7 @@ import { useContext, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { Header } from "../models/header";
-import { RuleSetContext } from "../utils/ruleset-context";
+import { appContext } from "../utils/app-context";
 
 export const RulePage = () => {
   const { id } = useParams();
@@ -16,7 +16,7 @@ export const RulePage = () => {
   }
 
   const { rules, updateRuleField, deleteRuleHeader, saveRule } =
-    useContext(RuleSetContext);
+    useContext(appContext);
   const rule = rules.find((r) => r.id === parsedId);
 
   const [showToast, setShowToast] = useState(false);
@@ -149,7 +149,7 @@ export const RulePage = () => {
                     <td className="px-2 md:px-3 py-2 md:py-3 w-px">
                       <button
                         onClick={() => {
-                          deleteRuleHeader(header);
+                          deleteRuleHeader(rule, header);
                         }}
                       >
                         <svg
