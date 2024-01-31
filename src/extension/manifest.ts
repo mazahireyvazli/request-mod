@@ -1,6 +1,7 @@
+import { ManifestV3Export } from "@crxjs/vite-plugin";
 import packageJson from "../../package.json";
 
-export const manifest: chrome.runtime.ManifestV3 = {
+export const manifest: ManifestV3Export = {
   name: packageJson.name,
   description: packageJson.description,
   version: packageJson.version,
