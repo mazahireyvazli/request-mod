@@ -1,4 +1,4 @@
-import { GlobalStorage } from "./storage";
+import { GlobalStorage } from "../models/storage";
 
 export class ChromeStorage<T> implements GlobalStorage<T> {
   private keyPrefix: string = "";
