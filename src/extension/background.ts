@@ -1,56 +1,74 @@
-import { RuleStore } from "../models/rule";
-import { EnvVarStore } from "../models/variables";
+import { RuleAppModel } from "../storage/rule.storage";
+import { EnvironmentAppModel, getVarsKV } from "../storage/environment.storage";
+import { getCompiledValue, hashCode } from "../utils/common";
+import { MSG_ACTION, Msg } from "../types/message";
 
-export const applyRules = async () => {
-  const ruleset = await RuleStore.getInstance().getAll();
-  const envs = await EnvVarStore.getInstance().getAll();
-  const activeEnvVars = envs.find((e) => e.active)?.getVarsKV();
+export const applyRules = async (
+  rules: RuleAppModel[],
+  activeEnv?: EnvironmentAppModel,
+) => {
+  const activeEnvVars = getVarsKV(activeEnv?.vars);
 
-  const rules: chrome.declarativeNetRequest.Rule[] = ruleset
+  const applyRules: chrome.declarativeNetRequest.Rule[] = rules
     .filter(
       (rule) =>
         rule.active === true &&
-        rule.headers.filter((header) => header.active === true && header.name)
-          .length > 0,
+        rule.rule.action.requestHeaders.filter(
+          (header) => header.active === true && header.header,
+        ).length > 0,
     )
-    .map((rule) => ({
-      id: rule.id,
-      priority: 1,
-      action: {
-        type: chrome.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
-        requestHeaders: rule.headers
-          .filter((header) => header.active === true)
-          .map((header) => ({
-            operation: chrome.declarativeNetRequest.HeaderOperation.SET,
-            header: header.getCompiledName(activeEnvVars),
-            value: header.getCompiledValue(activeEnvVars),
-          })),
-      },
-      condition: {
-        urlFilter: rule.urlPattern,
-        resourceTypes: Object.values(chrome.declarativeNetRequest.ResourceType),
-      },
-    }));
+    .map(
+      (rule): chrome.declarativeNetRequest.Rule => ({
+        id: hashCode(rule.document_id!),
+        priority: rule.rule.priority,
+        action: {
+          type: rule.rule.action.type,
+          requestHeaders: rule.rule.action.requestHeaders
+            .filter((header) => header.active === true && header.header)
+            .map((header) => ({
+              operation: header.operation,
+              header: getCompiledValue(header.header, activeEnvVars),
+              value: getCompiledValue(header.value, activeEnvVars),
+            })),
+        },
+        condition: {
+          urlFilter: rule.rule.condition.urlFilter,
+          resourceTypes: Object.values(
+            chrome.declarativeNetRequest.ResourceType,
+          ),
+        },
+      }),
+    );
 
-  chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: ruleset.map((rule) => rule.id),
-    addRules: rules,
+  const oldRules = await chrome.declarativeNetRequest.getDynamicRules();
+  const oldRuleIds = oldRules.map((rule) => rule.id);
+
+  console.log("clearing rules", oldRules);
+  console.log("applying rules", applyRules);
+
+  return chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: oldRuleIds,
+    addRules: applyRules,
   });
 };
 
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("setting initial rules");
-  applyRules();
-});
+chrome.runtime.onMessage.addListener((msg?: Msg) => {
+  console.log("msg received", msg);
 
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg === "applyRules") {
-    console.log("applyRules msg received");
-    applyRules();
+  switch (msg?.action) {
+    case MSG_ACTION.APPLY_RULES:
+      applyRules(msg.rules, msg.activeEnv);
+      break;
+
+    case MSG_ACTION.DISABLE_EXTENSION:
+      applyRules([]);
+      break;
+
+    case MSG_ACTION.ENABLE_EXTENSION:
+      applyRules(msg.rules, msg.activeEnv);
+      break;
+
+    default:
+      break;
   }
-});
-
-chrome.storage.sync.onChanged.addListener(() => {
-  console.log("updating rules");
-  applyRules();
 });

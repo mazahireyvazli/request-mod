@@ -1,20 +1,13 @@
-import { useEffect } from "react";
+import { useContext } from "react";
 import { Layout } from "../components/Layout";
-import { useNavigate } from "react-router-dom";
-import { storageLastPageKey } from "../utils/common";
+import { appContext } from "../utils/app-context";
 
 export const HomePage = () => {
-  const navigate = useNavigate();
+  const { currentUser } = useContext(appContext);
 
-  useEffect(() => {
-    const lastPagePath = localStorage.getItem(storageLastPageKey);
-
-    if (lastPagePath) {
-      navigate(lastPagePath, {
-        replace: true,
-      });
-    }
-  }, []);
-
-  return <Layout title="Home">homepage</Layout>;
+  return (
+    <Layout
+      title={currentUser?.email ? `Welcome, ${currentUser.email}` : "Welcome"}
+    ></Layout>
+  );
 };
