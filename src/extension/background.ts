@@ -1,3 +1,4 @@
+import "reflect-metadata";
 import { RuleStore } from "../models/rule";
 import { EnvVarStore } from "../models/variables";
 
