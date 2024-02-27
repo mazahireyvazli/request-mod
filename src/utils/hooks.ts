@@ -1,4 +1,11 @@
-import { Dispatch, SetStateAction, useCallback, useState } from "react";
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 import { set } from "lodash";
 
@@ -20,4 +27,23 @@ export const useUpdateState = <S extends {} | null>(
   }, []);
 
   return [state, updateState, setState];
+};
+
+export const useWithDebounce = () => {
+  const timeoutRef = useRef(0);
+  useEffect(() => {
+    return () => {
+      window.clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  const withDebounce = (fn: Function, timeout: number = 300) => {
+    window.clearTimeout(timeoutRef.current);
+
+    timeoutRef.current = window.setTimeout(() => {
+      fn();
+    }, timeout);
+  };
+
+  return withDebounce;
 };

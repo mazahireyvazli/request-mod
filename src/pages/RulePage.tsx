@@ -1,31 +1,57 @@
 import { initFlowbite } from "flowbite";
-import { Toast, Tooltip } from "flowbite-react";
+import { Tooltip } from "flowbite-react";
 import { useContext, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Layout } from "../components/Layout";
-import { Header } from "../models/header";
+import {
+  NewNetRequestModifyHeaderInfo,
+  RuleAppModel,
+} from "../storage/rule.storage";
+import { DocumentID } from "../types/firestore";
 import { appContext } from "../utils/app-context";
+import { useWithDebounce } from "../utils/hooks";
 
 export const RulePage = () => {
   const { id } = useParams();
-
-  const parsedId = Number(id);
-
-  if (!parsedId) {
-    return "page not found";
-  }
-
-  const { rules, updateRuleField, deleteRuleHeader, saveRule } =
-    useContext(appContext);
-  const rule = rules.find((r) => r.id === parsedId);
-
-  const [showToast, setShowToast] = useState(false);
 
   useEffect(() => {
     initFlowbite();
   }, []);
 
-  if (!rule) {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const { rules, updateRuleField, deleteRuleHeader, saveRule } =
+    useContext(appContext);
+  const rule = rules.find((r) => r.document_id === id);
+
+  const withDebounce = useWithDebounce();
+
+  const save = () => {
+    setIsSaving(true);
+    withDebounce(() => {
+      saveRule(rule!).finally(() => {
+        setIsSaving(false);
+      });
+    });
+  };
+
+  const handleSave = () => {
+    save();
+  };
+
+  const handleChange = (document_id: DocumentID, path: string, value: any) => {
+    updateRuleField(document_id, path, value);
+    save();
+  };
+
+  const handleDeleteRuleHeader = (
+    rule: RuleAppModel,
+    header: chrome.declarativeNetRequest.ModifyHeaderInfo,
+  ) => {
+    deleteRuleHeader(rule, header);
+  };
+
+  if (!rule || !id) {
     return "rule not found";
   }
 
@@ -42,38 +68,24 @@ export const RulePage = () => {
           </label>
           <div className="relative">
             <input
-              className="block text-lg w-full p-4 ps-10 text-gray-900 border border-gray-300 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+              className="block text-lg w-full p-2 ps-4 text-gray-900 border border-gray-300 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               placeholder="Rule name"
               id="rule-name"
               required
               value={rule.name}
               onChange={(e) => {
-                updateRuleField(parsedId, "name", e.target.value);
+                handleChange(id, "name", e.target.value);
               }}
             />
             <button
+              disabled={isSaving}
               onClick={() => {
-                saveRule(rule).then(() => {
-                  setShowToast(true);
-                  setTimeout(() => {
-                    setShowToast(false);
-                  }, 1500);
-                });
+                handleSave();
               }}
-              className="text-white absolute end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium  text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+              className="text-white absolute end-2.5 bottom-1.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium  text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 dark:disabled:bg-slate-500 disabled:text-slate-100"
             >
-              Save
+              {isSaving ? "Saving" : "Save"}
             </button>
-
-            {showToast && (
-              <Toast className="fixed flex justify-center items-center w-full p-4 bottom-5">
-                <div className="inline-flex h-8 w-8 shrink-0 items-center justify-center bg-cyan-100 text-cyan-500 dark:bg-cyan-800 dark:text-cyan-200"></div>
-                <div className="ml-3 text-sm font-normal">
-                  Rule saved successfully
-                </div>
-                <Toast.Toggle onDismiss={() => setShowToast(false)} />
-              </Toast>
-            )}
           </div>
         </div>
       }
@@ -94,7 +106,7 @@ export const RulePage = () => {
               </tr>
             </thead>
             <tbody>
-              {rule.headers.map((header, index) => {
+              {rule.rule?.action?.requestHeaders?.map((header, index) => {
                 return (
                   <tr
                     key={`${index}`}
@@ -106,9 +118,9 @@ export const RulePage = () => {
                           type="checkbox"
                           checked={header.active}
                           onChange={(e) => {
-                            updateRuleField(
-                              parsedId,
-                              `headers[${index}].active`,
+                            handleChange(
+                              id,
+                              `rule.action.requestHeaders[${index}].active`,
                               e.target.checked,
                             );
                           }}
@@ -120,11 +132,11 @@ export const RulePage = () => {
                         className="block w-full p-2 text-sm text-gray-900 border border-gray-300 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                         type="text"
                         placeholder="Header name"
-                        value={header.name}
+                        value={header.header}
                         onChange={(e) => {
-                          updateRuleField(
-                            parsedId,
-                            `headers[${index}].name`,
+                          handleChange(
+                            id,
+                            `rule.action.requestHeaders[${index}].header`,
                             e.target.value,
                           );
                         }}
@@ -137,9 +149,9 @@ export const RulePage = () => {
                         placeholder="Header value"
                         value={header.value}
                         onChange={(e) => {
-                          updateRuleField(
-                            parsedId,
-                            `headers[${index}].value`,
+                          handleChange(
+                            id,
+                            `rule.action.requestHeaders[${index}].value`,
                             e.target.value,
                           );
                         }}
@@ -149,7 +161,7 @@ export const RulePage = () => {
                     <td className="px-2 md:px-3 py-2 md:py-3 w-px">
                       <button
                         onClick={() => {
-                          deleteRuleHeader(rule, header);
+                          handleDeleteRuleHeader(rule, header);
                         }}
                       >
                         <svg
@@ -178,10 +190,12 @@ export const RulePage = () => {
               className="text-white end-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
               type="button"
               onClick={() => {
-                updateRuleField(
-                  parsedId,
-                  `headers[${rule.headers.length}]`,
-                  new Header(),
+                handleChange(
+                  id,
+                  `rule.action.requestHeaders[${
+                    rule.rule?.action?.requestHeaders?.length ?? 0
+                  }]`,
+                  NewNetRequestModifyHeaderInfo(),
                 );
               }}
             >
@@ -211,9 +225,9 @@ export const RulePage = () => {
             className="block w-full p-2 text-sm text-gray-900 border border-gray-300 bg-gray-50 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             type="text"
             placeholder="http://localhost:8080"
-            value={rule.urlPattern}
+            value={rule.rule?.condition?.urlFilter}
             onChange={(e) => {
-              updateRuleField(parsedId, `urlPattern`, e.target.value);
+              handleChange(id, `rule.condition.urlFilter`, e.target.value);
             }}
           />
         </Tooltip>
