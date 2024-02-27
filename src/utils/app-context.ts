@@ -223,7 +223,7 @@ export const appStateHandler = (
           ),
           action: MSG_ACTION.APPLY_RULES,
         });
-      }, 1000);
+      }, 300);
     }
   }, [rules, environments, currentUser?.active_env_id]);
 

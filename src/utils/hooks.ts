@@ -37,7 +37,7 @@ export const useWithDebounce = () => {
     };
   }, []);
 
-  const withDebounce = (fn: Function, timeout: number = 1000) => {
+  const withDebounce = (fn: Function, timeout: number = 300) => {
     window.clearTimeout(timeoutRef.current);
 
     timeoutRef.current = window.setTimeout(() => {
