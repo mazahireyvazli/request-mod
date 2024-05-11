@@ -1,9 +1,21 @@
 import { useContext } from "react";
 import { Link } from "react-router-dom";
 import { appContext } from "../utils/app-context";
+import { DocumentID } from "../types/firestore";
+import { Nullable } from "../types/nullable";
+import { Tooltip } from "flowbite-react";
 
 export const Topnav = () => {
-  const { envs, setActiveEnv } = useContext(appContext);
+  const {
+    environments,
+    setActiveEnvironment,
+    currentUser,
+    isExtensionOpenInPopup,
+  } = useContext(appContext);
+
+  const handleActiveEnvironmentChange = (env_id: Nullable<DocumentID>) => {
+    setActiveEnvironment(env_id);
+  };
 
   return (
     <nav className="fixed top-0 z-50 w-full bg-white border-b border-gray-200 dark:bg-gray-800 dark:border-gray-700">
@@ -32,7 +44,7 @@ export const Topnav = () => {
                 />
               </svg>
             </button>
-            <a href="/" className="flex items-center ms-2 md:me-24">
+            <Link to="/" className="flex items-center ms-2 md:me-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fillRule="evenodd"
@@ -52,33 +64,62 @@ export const Topnav = () => {
               <span className="self-center ml-2 text-xl font-semibold whitespace-nowrap dark:text-white">
                 Request Mod
               </span>
-            </a>
+            </Link>
+            {isExtensionOpenInPopup && (
+              <Tooltip placement="right" content="Open in tab">
+                <button
+                  onClick={() => {
+                    chrome?.tabs?.create({ url: document.URL });
+                  }}
+                  className="flex"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="w-6 h-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244"
+                    />
+                  </svg>
+                </button>
+              </Tooltip>
+            )}
           </div>
           <div className="flex items-center">
             <select
               id="countries"
               className="mr-2 bg-gray-50 border border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500 block w-full p-1.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
               onChange={(e) => {
-                setActiveEnv(Number(e.target.value));
+                handleActiveEnvironmentChange(
+                  e.target.value ? e.target.value : null,
+                );
               }}
-              value={envs.find((v) => v.active === true)?.id}
+              value={
+                currentUser?.active_env_id ? currentUser.active_env_id : ""
+              }
             >
-              <option>Select environment</option>
-              {envs.map((env) => {
+              <option value="">Select environment</option>
+              {environments.map((env) => {
                 return (
-                  <option value={env.id} key={env.id}>
+                  <option value={env.document_id!} key={env.document_id}>
                     {env.name}
                   </option>
                 );
               })}
             </select>
 
-            <Link to="/rules/variables">
+            <Link to="/environments">
               <button
                 type="button"
                 className="w-full text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium text-sm px-4 py-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
               >
-                Variables
+                Environments
               </button>
             </Link>
           </div>
