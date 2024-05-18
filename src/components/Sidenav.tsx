@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from "react";
 
 import { initFlowbite } from "flowbite";
 import { Link, useNavigate } from "react-router-dom";
-import { appContext } from "../utils/app-context";
+import { AppContext } from "../utils/app-context";
 import { Button, Modal, Tooltip } from "flowbite-react";
 import { DocumentID } from "../types/firestore";
 import { useWithDebounce } from "../utils/hooks";
@@ -18,7 +18,7 @@ export const Sidenav = () => {
     deleteRule,
     isExtensionDisabled,
     toggleExtension,
-  } = useContext(appContext);
+  } = useContext(AppContext);
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedRuleId, setSelectedRuleId] = useState<DocumentID>();

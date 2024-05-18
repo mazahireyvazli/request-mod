@@ -1,6 +1,6 @@
 import { useContext } from "react";
 import { Link } from "react-router-dom";
-import { appContext } from "../utils/app-context";
+import { AppContext } from "../utils/app-context";
 import { DocumentID } from "../types/firestore";
 import { Nullable } from "../types/nullable";
 import { Tooltip } from "flowbite-react";
@@ -11,7 +11,7 @@ export const Topnav = () => {
     setActiveEnvironment,
     currentUser,
     isExtensionOpenInPopup,
-  } = useContext(appContext);
+  } = useContext(AppContext);
 
   const handleActiveEnvironmentChange = (env_id: Nullable<DocumentID>) => {
     setActiveEnvironment(env_id);

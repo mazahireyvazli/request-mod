@@ -1,9 +1,9 @@
 import { useContext } from "react";
 import { Layout } from "../components/Layout";
-import { appContext } from "../utils/app-context";
+import { AppContext } from "../utils/app-context";
 
 export const HomePage = () => {
-  const { currentUser } = useContext(appContext);
+  const { currentUser } = useContext(AppContext);
 
   return (
     <Layout

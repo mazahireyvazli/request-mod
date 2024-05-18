@@ -25,10 +25,10 @@ export interface EnvVar {
   value: string;
 }
 
-export const NewEnvVar = () => {
+export const NewEnvVar = (envVar?: Partial<EnvVar>) => {
   return {
-    name: "",
-    value: "",
+    name: envVar?.name || "",
+    value: envVar?.value || "",
   };
 };
 

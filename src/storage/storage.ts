@@ -10,13 +10,7 @@ export const environmentStorage = new EnvironmentStorage(firestore);
 
 export const globalStorage = {
   isExtensionDisabled: () => {
-    const val = localStorage.getItem(storageExtensionDisabledKey);
-
-    if (val && val === "true") {
-      return true;
-    }
-
-    return false;
+    return localStorage.getItem(storageExtensionDisabledKey) === "true";
   },
   setIsExtensionDisabled: (v: boolean) => {
     localStorage.setItem(storageExtensionDisabledKey, v.toString());

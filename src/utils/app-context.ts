@@ -27,7 +27,7 @@ import { sendMsgToExtension } from "../extension/messaging";
 import { MSG_ACTION } from "../types/message";
 import { useWithDebounce } from "./hooks";
 
-export const appStateHandler = (
+export const useAppStateHandler = (
   userStore: UserStorage = userStorage,
   ruleStore: RuleStorage = ruleStorage,
   environmentStore: EnvironmentStorage = environmentStorage,
@@ -107,7 +107,6 @@ export const appStateHandler = (
       return newState;
     });
   };
-  const isExtensionOpenInPopup = globalStore.isExtensionOpenInPopup();
 
   // Rule state
   const [rules, setRules] = useState<RuleAppModel[]>([]);
@@ -153,7 +152,7 @@ export const appStateHandler = (
       return s.filter((r) => r.document_id !== document_id);
     });
 
-    return await ruleStore.delete(document_id);
+    return ruleStore.delete(document_id);
   };
 
   useEffect(() => {
@@ -229,7 +228,7 @@ export const appStateHandler = (
 
   return {
     isExtensionDisabled,
-    isExtensionOpenInPopup,
+    isExtensionOpenInPopup: globalStore.isExtensionOpenInPopup(),
     toggleExtension,
 
     authStateSettled,
@@ -254,6 +253,7 @@ export const appStateHandler = (
     updateRuleField: (
       document_id: DocumentID,
       fieldName: string,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fieldValue: any,
     ) => {
       setRules((s) => {
@@ -322,6 +322,7 @@ export const appStateHandler = (
     updateEnvField: (
       document_id: DocumentID,
       fieldName: string,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       fieldValue: any,
     ) => {
       setEnvironments((s) => {
@@ -371,6 +372,6 @@ export const appStateHandler = (
   };
 };
 
-export const appContext = createContext(
-  {} as ReturnType<typeof appStateHandler>,
+export const AppContext = createContext(
+  {} as ReturnType<typeof useAppStateHandler>,
 );

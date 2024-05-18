@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { EnvVar, NewEnvVar } from "../storage/environment.storage";
 import { DocumentID } from "../types/firestore";
-import { appContext } from "../utils/app-context";
+import { AppContext } from "../utils/app-context";
 import { useWithDebounce } from "../utils/hooks";
 
 export const EnvironmentDetailPage = () => {
@@ -12,7 +12,7 @@ export const EnvironmentDetailPage = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   const { environments, updateEnvField, deleteVariable, saveEnv } =
-    useContext(appContext);
+    useContext(AppContext);
   const env = environments.find((r) => r.document_id === id);
 
   const withDebounce = useWithDebounce();
@@ -30,6 +30,7 @@ export const EnvironmentDetailPage = () => {
     save();
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChange = (document_id: DocumentID, path: string, value: any) => {
     updateEnvField(document_id, path, value);
     save();

@@ -1,6 +1,6 @@
 import { useContext, useState } from "react";
 import { Layout } from "../components/Layout";
-import { appContext } from "../utils/app-context";
+import { AppContext } from "../utils/app-context";
 import { useNavigate } from "react-router-dom";
 import { useWithDebounce } from "../utils/hooks";
 import { StandardButton } from "../components/StandardButton";
@@ -9,7 +9,7 @@ import { DocumentID } from "../types/firestore";
 export const EnvironmentsPage = () => {
   const navigate = useNavigate();
 
-  const { environments, createEnv, deleteEnv } = useContext(appContext);
+  const { environments, createEnv, deleteEnv } = useContext(AppContext);
 
   const [isLoading, setIsLoading] = useState(false);
 

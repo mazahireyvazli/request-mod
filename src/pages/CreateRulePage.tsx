@@ -1,14 +1,14 @@
 import { Layout } from "../components/Layout";
 import { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { appContext } from "../utils/app-context";
+import { AppContext } from "../utils/app-context";
 
 export const CreateRulePage = () => {
   const navigate = useNavigate();
 
   const [ruleName, setRuleName] = useState("");
 
-  const { addRule } = useContext(appContext);
+  const { addRule } = useContext(AppContext);
 
   return (
     <Layout title="Create rule">

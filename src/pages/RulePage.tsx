@@ -8,8 +8,9 @@ import {
   RuleAppModel,
 } from "../storage/rule.storage";
 import { DocumentID } from "../types/firestore";
-import { appContext } from "../utils/app-context";
+import { AppContext } from "../utils/app-context";
 import { useWithDebounce } from "../utils/hooks";
+import { NotFoundPage } from "./NotFoundPage";
 
 export const RulePage = () => {
   const { id } = useParams();
@@ -21,7 +22,7 @@ export const RulePage = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   const { rules, updateRuleField, deleteRuleHeader, saveRule } =
-    useContext(appContext);
+    useContext(AppContext);
   const rule = rules.find((r) => r.document_id === id);
 
   const withDebounce = useWithDebounce();
@@ -39,6 +40,7 @@ export const RulePage = () => {
     save();
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleChange = (document_id: DocumentID, path: string, value: any) => {
     updateRuleField(document_id, path, value);
     save();
@@ -52,7 +54,7 @@ export const RulePage = () => {
   };
 
   if (!rule || !id) {
-    return "rule not found";
+    return <NotFoundPage />;
   }
 
   return (
