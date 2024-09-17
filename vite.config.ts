@@ -1,7 +1,7 @@
 import { crx } from "@crxjs/vite-plugin";
 import react from "@vitejs/plugin-react";
 import { writeFileSync } from "fs";
-import { PluginOption, defineConfig, splitVendorChunkPlugin } from "vite";
+import { PluginOption, defineConfig } from "vite";
 
 import path from "path";
 import { manifest } from "./src/extension/manifest";
@@ -57,7 +57,7 @@ export default defineConfig({
   plugins: [
     react(),
     crx({ manifest }),
-    splitVendorChunkPlugin(),
+    // splitVendorChunkPlugin(),
     appManifestGenerator(manifestFileName),
   ],
   build: {

@@ -15,6 +15,7 @@ import { AppContext, useAppStateHandler } from "./utils/app-context";
 import { isExtension, storageLastPageKey } from "./utils/common";
 import { useEffect } from "react";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { Spinner } from "flowbite-react";
 
 const routes: RouteObject[] = [
   {
@@ -72,12 +73,18 @@ export const App = () => {
     }
   }, [isExtensionOpenInPopup]);
 
+  if (!appState.authStateSettled) {
+    return (
+      <div className="flex justify-center items-center w-dvh h-dvh">
+        <Spinner color="purple" aria-label="Purple spinner example" size="xl" />
+      </div>
+    );
+  }
+
   return (
     <AppContext.Provider value={appState}>
       {isAuthenticated && <RouterProvider router={router} />}
-      {!isAuthenticated && (
-        <SigninModal show={true} loading={!appState.authStateSettled} />
-      )}
+      {!isAuthenticated && <SigninModal show={true} />}
     </AppContext.Provider>
   );
 };
