@@ -39,44 +39,44 @@ export const useAppStateHandler = (
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const [userdb, err] = await userStore.get(user.uid);
+      if (!user) {
+        setCurrentUser(null);
+        setAuthStateSettled(true);
 
-        if (err !== null) {
-          console.log("could not find user");
-
-          const updated = {
-            ...currentUser,
-            email: user.email,
-            document_id: user.uid,
-          };
-
-          const [err] = await userStore.set(updated);
-          if (err !== null) {
-            console.log("could not update user", err, updated);
-          }
-
-          setCurrentUser(updated);
-        }
-
-        if (userdb) {
-          setCurrentUser(userdb);
-          setAuthStateSettled(true);
-        }
+        sendMsgToExtension({
+          rules,
+          activeEnv: environments.find(
+            (e) => e.document_id === currentUser?.active_env_id,
+          ),
+          action: MSG_ACTION.DISABLE_EXTENSION,
+        });
 
         return;
       }
 
-      setCurrentUser(null);
+      const [userdb, err] = await userStore.get(user.uid);
       setAuthStateSettled(true);
 
-      sendMsgToExtension({
-        rules,
-        activeEnv: environments.find(
-          (e) => e.document_id === currentUser?.active_env_id,
-        ),
-        action: MSG_ACTION.DISABLE_EXTENSION,
-      });
+      if (err !== null) {
+        console.log("could not find user");
+
+        const updated = {
+          ...currentUser,
+          email: user.email,
+          document_id: user.uid,
+        };
+
+        const [err] = await userStore.set(updated);
+        if (err !== null) {
+          console.log("could not update user", err, updated);
+        }
+
+        setCurrentUser(updated);
+      }
+
+      if (userdb) {
+        setCurrentUser(userdb);
+      }
     });
 
     return () => {
