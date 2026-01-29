@@ -1,7 +1,7 @@
 import { createContext, useEffect, useState } from "react";
 
 import { onAuthStateChanged } from "firebase/auth";
-import { set } from "lodash";
+import set from "lodash/set";
 import { auth } from "../firebase/init";
 import {
   EnvVar,

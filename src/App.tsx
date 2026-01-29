@@ -6,16 +6,39 @@ import {
 } from "react-router-dom";
 
 import { SigninModal } from "./components/SigninModal";
-import { CreateRulePage } from "./pages/CreateRulePage";
-import { EnvironmentDetailPage } from "./pages/EnvironmentDetailPage";
-import { EnvironmentsPage } from "./pages/Environments";
-import { HomePage } from "./pages/HomePage";
-import { RulePage } from "./pages/RulePage";
 import { AppContext, useAppStateHandler } from "./utils/app-context";
 import { isExtension, storageLastPageKey } from "./utils/common";
-import { useEffect } from "react";
-import { NotFoundPage } from "./pages/NotFoundPage";
+import { lazy, Suspense, useEffect } from "react";
 import { Spinner } from "flowbite-react";
+
+const HomePage = lazy(() =>
+  import("./pages/HomePage").then((m) => ({ default: m.HomePage })),
+);
+const CreateRulePage = lazy(() =>
+  import("./pages/CreateRulePage").then((m) => ({ default: m.CreateRulePage })),
+);
+const EnvironmentDetailPage = lazy(() =>
+  import("./pages/EnvironmentDetailPage").then((m) => ({
+    default: m.EnvironmentDetailPage,
+  })),
+);
+const EnvironmentsPage = lazy(() =>
+  import("./pages/Environments").then((m) => ({ default: m.EnvironmentsPage })),
+);
+const RulePage = lazy(() =>
+  import("./pages/RulePage").then((m) => ({ default: m.RulePage })),
+);
+const NotFoundPage = lazy(() =>
+  import("./pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })),
+);
+
+const PageLoader = () => {
+  return (
+    <div className="flex justify-center items-center w-dvh h-dvh">
+      <Spinner color="purple" aria-label="Purple spinner example" size="xl" />
+    </div>
+  );
+};
 
 const routes: RouteObject[] = [
   {
@@ -74,16 +97,16 @@ export const App = () => {
   }, [isExtensionOpenInPopup]);
 
   if (!appState.authStateSettled) {
-    return (
-      <div className="flex justify-center items-center w-dvh h-dvh">
-        <Spinner color="purple" aria-label="Purple spinner example" size="xl" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (
     <AppContext.Provider value={appState}>
-      {isAuthenticated && <RouterProvider router={router} />}
+      {isAuthenticated && (
+        <Suspense fallback={<PageLoader />}>
+          <RouterProvider router={router} />
+        </Suspense>
+      )}
       {!isAuthenticated && <SigninModal show={true} />}
     </AppContext.Provider>
   );
