@@ -62,13 +62,41 @@ export default defineConfig({
   ],
   build: {
     manifest: manifestFileName,
-    rollupOptions: {
+    rolldownOptions: {
       output: {
         format: "esm",
         exports: "named",
         entryFileNames: "js/[name]-[hash:16].js",
         chunkFileNames: "js/[name]-[hash:16].js",
         assetFileNames: "assets/[name]-[hash:16][extname]",
+        codeSplitting: {
+          groups: [
+            {
+              name: 'firebase-app-auth-vendor',
+              test: (id) => {
+                return id.includes('node_modules/firebase/app/') || id.includes('node_modules/firebase/auth/');
+              },
+            },
+            {
+              name: 'react-vendor',
+              test: (id) => {
+                return id.includes('node_modules/react/') || id.includes('node_modules/react-dom/');
+              },
+            },
+            {
+              name: 'react-router-vendor',
+              test: (id) => {
+                return id.includes('node_modules/react-router-dom/');
+              },
+            },
+            {
+              name: 'flowbite-vendor',
+              test: (id) => {
+                return id.includes('node_modules/flowbite/') || id.includes('node_modules/flowbite-react/');
+              },
+            },
+          ],
+        },
       },
       input: {
         index: "index.html",
