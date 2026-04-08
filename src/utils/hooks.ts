@@ -7,7 +7,8 @@ import {
   useState,
 } from "react";
 
-import set from "lodash/set";
+// @ts-ignore
+import set from "./lodash__set";
 
 type UpdateStateFn<S> = [
   S,
