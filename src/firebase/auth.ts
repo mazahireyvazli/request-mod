@@ -2,6 +2,10 @@ import {
   signInWithCredential,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  EmailAuthProvider,
+  linkWithCredential,
 } from "firebase/auth";
 import { auth } from "./init";
 import { isExtension } from "../utils/common";
@@ -33,6 +37,20 @@ const browserSignin = async () => {
   const userCredential = await signInWithPopup(auth, provider);
 
   return userCredential;
+};
+
+export const signInWithEmail = async (email: string, password: string) => {
+  return signInWithEmailAndPassword(auth, email, password);
+};
+
+export const signUpWithEmail = async (email: string, password: string) => {
+  return createUserWithEmailAndPassword(auth, email, password);
+};
+
+export const linkEmailToGoogle = async (email: string, password: string) => {
+  const googleCredential = await signIn();
+  const emailCredential = EmailAuthProvider.credential(email, password);
+  return linkWithCredential(googleCredential.user, emailCredential);
 };
 
 export const signOut = async () => {
