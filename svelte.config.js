@@ -57,7 +57,7 @@ const config = {
     },
 
     version: {
-      name: "0.0.1", // used for generating file hashes, service worker and etc.
+      name: "0.0.2", // used for generating file hashes, service worker and etc.
     },
 
     files: {

@@ -8,11 +8,19 @@
   import { auth, db } from "$lib/client/firebase";
   import { removeAllDNRRules, updateExtensionDNRRules } from "$lib/client/rules_manager";
   import Header from "$lib/components/Header/Header.svelte";
-  import LoginModal from "$lib/components/LoginModal/LoginModal.svelte";
+// import LoginModal from "$lib/components/LoginModal/LoginModal.svelte";
   import { onAuthStateChanged } from "firebase/auth";
   import { collection, doc, onSnapshot } from "firebase/firestore";
-  import { onMount } from "svelte";
+  import { onMount, type Component } from "svelte";
   import type { LayoutProps } from "./$types";
+
+  let lazyLoginModalPromise: Promise<{ default: Component<any> }> | null = $state(null);
+  function loadLoginModalComponent(): void {
+    // Only trigger the network request if it hasn't been initialized yet
+    if (!lazyLoginModalPromise) {
+      lazyLoginModalPromise = import("$lib/components/LoginModal/LoginModal.svelte");
+    }
+  }
 
   const appContext = setAppContext();
 
@@ -80,6 +88,10 @@
     if (!auth) return;
 
     onAuthStateChanged(auth, async (user) => {
+      if(!user) {
+        loadLoginModalComponent();
+      }
+
       appContext.authUser = user;
     });
   });
@@ -161,7 +173,11 @@
         <p>Checking authentication state...</p>
       </div>
     {:else if appContext.authUser === null}
-      <LoginModal />
+      {#if lazyLoginModalPromise}
+        {#await lazyLoginModalPromise then { default: LazyLoginModal }}
+          <LazyLoginModal />
+        {/await}
+      {/if}
     {:else}
       {@render children()}
     {/if}
