@@ -8,8 +8,7 @@
     "build": "bunx --bun vite build && bun ./common/plugins/clean-inline-scripts.js",
     "preview": "bunx --bun vite preview",
     "prepare": "bunx --bun svelte-kit sync || echo ''",
-    "check": "bunx --bun svelte-kit sync && bunx --bun svelte-check --tsconfig ./tsconfig.json",
-    "check:watch": "bunx --bun svelte-kit sync && bunx --bun svelte-check --tsconfig ./tsconfig.json --watch"
+    "check": "bunx --bun svelte-kit sync && bunx --bun svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
     "firebase": "12.14.0"

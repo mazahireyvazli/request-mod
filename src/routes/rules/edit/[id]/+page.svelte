@@ -13,7 +13,7 @@
 
   let rule = $state<RequestRule>();
   $effect(() => {
-    rule = appContext.rules.find((r) => r.id === params.id);
+    rule = appContext.rules?.find((r) => r.id === params.id);
   });
 
   let isSubmitting = $state(false);

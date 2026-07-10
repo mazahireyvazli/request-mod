@@ -35,7 +35,7 @@
     const newIsActive = header.isActive === false ? true : false;
     await updateRuleById(userId, ruleId, {
       [headerType === "request" ? "requestHeaders" : "responseHeaders"]: headers.map((h, idx) =>
-        idx === headerIndex ? { ...h, isActive: newIsActive } : h
+        idx === headerIndex ? { ...h, isActive: newIsActive } : h,
       ),
     });
   }
@@ -58,7 +58,6 @@
 </script>
 
 <div class="container">
-
   <Sidebar />
 
   <section class="rules-dashboard">
@@ -108,7 +107,7 @@
                         class="pill clickable-pill"
                         class:pill-disabled={h.isActive === false}
                         onclick={() => {
-                           handleToggleHeaderActive(rule.id, "request", hIdx)
+                          handleToggleHeaderActive(rule.id, "request", hIdx);
                         }}
                         role="button"
                         tabindex="0"
@@ -143,9 +142,7 @@
               {/if}
             </div>
             <div class="rule-actions">
-              <a class="btn btn-sm btn-secondary" href="#/rules/edit/{rule.id}" aria-label="Edit rule"
-                >Edit</a
-              >
+              <a class="btn btn-sm btn-secondary" href="#/rules/edit/{rule.id}" aria-label="Edit rule">Edit</a>
               <button onclick={() => handleDeleteRule(rule.id)} class="btn btn-sm btn-danger" aria-label="Delete rule"
                 >Delete</button
               >
@@ -156,4 +153,3 @@
     {/if}
   </section>
 </div>
-

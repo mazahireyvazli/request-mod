@@ -1,4 +1,4 @@
-import type { User } from "$lib/client/firebase";
+import type { User } from "firebase/auth";
 
 import { getContext, setContext } from "svelte";
 

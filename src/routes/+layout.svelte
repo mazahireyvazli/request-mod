@@ -131,14 +131,13 @@
       return;
     }
 
-    if(dbUser.isExtensionEnabled === false) {
+    if (dbUser.isExtensionEnabled === false) {
       console.log("Extension is enabled", dbUser?.isExtensionEnabled);
       removeAllDNRRules();
       return;
     }
 
     updateExtensionDNRRules($state.snapshot(rules).filter((r) => r.isActive));
-
   });
 </script>
 
@@ -161,9 +160,8 @@
         <div class="spinner"></div>
         <p>Checking authentication state...</p>
       </div>
-
-      {:else if (appContext.authUser === null)}
-        <LoginModal />
+    {:else if appContext.authUser === null}
+      <LoginModal />
     {:else}
       {@render children()}
     {/if}

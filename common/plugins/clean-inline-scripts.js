@@ -15,7 +15,7 @@ if (fs.existsSync(htmlPath)) {
     let inlineScriptContent = match[1].trim();
     // Resolve absolute imports in the extracted initializer script too
     inlineScriptContent = inlineScriptContent.replaceAll('import("/', 'import("./');
-    
+
     const externalScriptName = "start-sveltekit.js";
     const externalScriptPath = path.join(buildDir, externalScriptName);
 
@@ -37,4 +37,3 @@ if (fs.existsSync(htmlPath)) {
 } else {
   console.error("build/index.html not found! Ensure build succeeds first.");
 }
-
