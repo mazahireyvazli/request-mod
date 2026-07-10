@@ -1,8 +1,5 @@
-console.log("Content script loaded and listening for messages from the page context.");
-
 // Run this inside your extension's content script
 window.addEventListener("message", (event) => {
-  console.log("Received message from page context:", event);
   // Security check: Only accept messages from the same page context
   if (event.source !== window) return;
 

@@ -8,13 +8,15 @@
   import { auth, db } from "$lib/client/firebase";
   import { removeAllDNRRules, updateExtensionDNRRules } from "$lib/client/rules_manager";
   import Header from "$lib/components/Header/Header.svelte";
+  import LoginModal from "$lib/components/LoginModal/LoginModal.svelte";
   import { onAuthStateChanged } from "firebase/auth";
   import { collection, doc, onSnapshot } from "firebase/firestore";
   import { onMount } from "svelte";
+  import type { LayoutProps } from "./$types";
 
   const appContext = setAppContext();
 
-  const { children } = $props();
+  const { children }: LayoutProps = $props();
 
   onMount(() => {
     console.log("hydration complete", performance.now());
@@ -152,13 +154,16 @@
 >
   <Header />
   <main>
-    {#if !appContext.authUser || !appContext.dbUser}
+    {#if appContext.authUser === undefined}
       <div
         style="display: flex; justify-content: center; align-items: center; height: 100dvh; flex-direction: column; gap: 1rem;"
       >
         <div class="spinner"></div>
         <p>Checking authentication state...</p>
       </div>
+
+      {:else if (appContext.authUser === null)}
+        <LoginModal />
     {:else}
       {@render children()}
     {/if}

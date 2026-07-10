@@ -43,8 +43,8 @@ class AppContext {
   isInteractive = $state(false);
   isUpdateAvailable = $state(false);
 
-  authUser = $state<User | null>(null);
-  dbUser = $state<DBUser | null>(null);
+  authUser = $state<User | null>();
+  dbUser = $state<DBUser | null>();
 
   rules = $state<RequestRule[]>();
 
