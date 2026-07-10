@@ -1,0 +1,17 @@
+node_modules
+
+# Output
+.output
+/.svelte-kit
+/build
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env
+.env
+.env.*.local
+.env.local
+
+*.local

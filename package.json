@@ -1,0 +1,30 @@
+{
+  "name": "request-mod-sv",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bunx --bun vite dev",
+    "build": "bunx --bun vite build && bun ./common/plugins/clean-inline-scripts.js",
+    "preview": "bunx --bun vite preview",
+    "prepare": "bunx --bun svelte-kit sync || echo ''",
+    "check": "bunx --bun svelte-kit sync && bunx --bun svelte-check --tsconfig ./tsconfig.json",
+    "check:watch": "bunx --bun svelte-kit sync && bunx --bun svelte-check --tsconfig ./tsconfig.json --watch"
+  },
+  "dependencies": {
+    "firebase": "12.14.0"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-static": "3.0.10",
+    "@sveltejs/kit": "2.61.1",
+    "@sveltejs/vite-plugin-svelte": "7.1.2",
+    "@types/bun": "1.3.14",
+    "@types/chrome": "0.1.43",
+    "oxfmt": "0.52.0",
+    "oxlint": "1.67.0",
+    "oxlint-tsgolint": "0.23.0",
+    "svelte": "5.56.0",
+    "svelte-check": "4.5.0",
+    "vite": "8.0.16"
+  }
+}

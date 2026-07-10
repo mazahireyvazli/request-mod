@@ -1,0 +1,1373 @@
+<script lang="ts">
+  import { auth, GoogleAuthProvider, hasFirebaseConfig, signInWithCredential } from "$lib/client/firebase";
+  import {
+    deleteRule,
+    isGlobalEnabled,
+    loadAllRules,
+    saveRule,
+    setGlobalEnabled,
+    toggleRuleActive,
+    updateExtensionDnr,
+    type HeaderOperation,
+    type RequestRule,
+  } from "$lib/client/rules_manager";
+  import {
+    createUserWithEmailAndPassword,
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    signInWithPopup,
+    signOut,
+    type User,
+  } from "firebase/auth";
+  import { onMount } from "svelte";
+
+  import { getAppContext } from "$lib/client/app_context.svelte";
+
+  // State Management
+  let rules = $state<RequestRule[]>([]);
+  let currentUser = $state<User | null>(null);
+  const appContext = getAppContext();
+
+  // Form State
+  let showForm = $state(false);
+  let editingId = $state<string | undefined>(undefined);
+  let ruleName = $state("");
+  let ruleType = $state<"block" | "redirect" | "modifyHeaders">("modifyHeaders");
+  let urlFilter = $state("");
+  let redirectUrl = $state("");
+  let isRuleActive = $state(true);
+
+  // Resource Types
+  const availableResourceTypes = [
+    "main_frame",
+    "sub_frame",
+    "stylesheet",
+    "script",
+    "image",
+    "font",
+    "xmlhttprequest",
+    "websocket",
+    "other",
+  ];
+  let selectedResourceTypes = $state<string[]>(["main_frame", "sub_frame", "xmlhttprequest"]);
+
+  // Headers
+  let requestHeaders = $state<HeaderOperation[]>([]);
+  let responseHeaders = $state<HeaderOperation[]>([]);
+
+  // Auth Form State
+  let authEmail = $state("");
+  let authPassword = $state("");
+  let authError = $state("");
+  let isRegistering = $state(false);
+  let authLoading = $state(false);
+
+  // Load Initial Data
+  let authChecked = $state(false);
+  let pollInterval: ReturnType<typeof setTimeout>;
+
+  onMount(() => {
+    void isGlobalEnabled()
+      .catch((err) => {
+        console.error("Failed to read global enable state:", err);
+      })
+      .then((enabled) => {
+        appContext.isExtensionEnabled = enabled ?? true;
+      });
+
+    // Auth Listener
+    if (auth) {
+      onAuthStateChanged(auth, async (user) => {
+        currentUser = user;
+        authChecked = true;
+        rules = await loadAllRules();
+      });
+    } else {
+      authChecked = true;
+    }
+
+    const pollRules = async () => {
+      rules = await loadAllRules();
+
+      if (appContext.isExtension) {
+        await updateExtensionDnr(rules);
+      }
+
+      pollInterval = setTimeout(pollRules, 10_000);
+    };
+
+    pollRules();
+
+    return () => {
+      if (pollInterval) clearTimeout(pollInterval);
+    };
+  });
+
+  async function handleToggleGlobalEnabled(e: Event) {
+    const checked = (e.currentTarget as HTMLInputElement).checked;
+    await setGlobalEnabled(checked);
+    appContext.isExtensionEnabled = checked;
+  }
+
+  // Action Handlers
+  async function handleToggleActive(id: string) {
+    rules = await toggleRuleActive(id);
+  }
+
+  async function handleDelete(id: string) {
+    if (confirm("Are you sure you want to delete this rule?")) {
+      rules = await deleteRule(id);
+    }
+  }
+
+  function handleEdit(rule: RequestRule) {
+    editingId = rule.id;
+    ruleName = rule.name;
+    ruleType = rule.type;
+    urlFilter = rule.urlFilter;
+    redirectUrl = rule.redirectUrl || "";
+    isRuleActive = rule.isActive;
+    selectedResourceTypes = Array.isArray(rule.resourceTypes) ? [...rule.resourceTypes] : [];
+    requestHeaders = JSON.parse(JSON.stringify(rule.requestHeaders || []));
+    responseHeaders = JSON.parse(JSON.stringify(rule.responseHeaders || []));
+    showForm = true;
+  }
+
+  function resetForm() {
+    editingId = undefined;
+    ruleName = "";
+    ruleType = "modifyHeaders";
+    urlFilter = "";
+    redirectUrl = "";
+    isRuleActive = true;
+    selectedResourceTypes = ["main_frame", "sub_frame", "xmlhttprequest"];
+    requestHeaders = [];
+    responseHeaders = [];
+    showForm = false;
+  }
+
+  async function handleSaveRule() {
+    if (!ruleName.trim()) {
+      alert("Please provide a name for this rule.");
+      return;
+    }
+
+    const saved = await saveRule({
+      id: editingId,
+      name: ruleName,
+      type: ruleType,
+      urlFilter: urlFilter.trim(),
+      resourceTypes: selectedResourceTypes,
+      isActive: isRuleActive,
+      requestHeaders: ruleType === "modifyHeaders" ? requestHeaders.filter((h) => h.header.trim()) : [],
+      responseHeaders: ruleType === "modifyHeaders" ? responseHeaders.filter((h) => h.header.trim()) : [],
+      redirectUrl: ruleType === "redirect" ? redirectUrl.trim() : undefined,
+    });
+
+    rules = saved;
+    resetForm();
+  }
+
+  // Header helpers
+  function addHeaderRow(type: "request" | "response") {
+    const row: HeaderOperation = { header: "", operation: "set", value: "", isActive: true };
+    if (type === "request") {
+      requestHeaders = [...requestHeaders, row];
+    } else {
+      responseHeaders = [...responseHeaders, row];
+    }
+  }
+
+  function removeHeaderRow(type: "request" | "response", index: number) {
+    if (type === "request") {
+      requestHeaders = requestHeaders.filter((_, i) => i !== index);
+    } else {
+      responseHeaders = responseHeaders.filter((_, i) => i !== index);
+    }
+  }
+
+  // Auth Operations
+  async function handleAuth() {
+    if (!auth) return;
+    if (!authEmail.trim() || !authPassword.trim()) {
+      authError = "Please enter email and password.";
+      return;
+    }
+
+    authError = "";
+    authLoading = true;
+
+    try {
+      if (isRegistering) {
+        await createUserWithEmailAndPassword(auth, authEmail, authPassword);
+      } else {
+        await signInWithEmailAndPassword(auth, authEmail, authPassword);
+      }
+      authEmail = "";
+      authPassword = "";
+    } catch (err: any) {
+      console.error(err);
+      authError = err.message || "Authentication failed.";
+    } finally {
+      authLoading = false;
+    }
+  }
+
+  const extensionSignin = async () => {
+    if (!auth) {
+      return;
+    }
+
+    const authTokenResult = await chrome.identity.getAuthToken({
+      interactive: true,
+    });
+
+    const userCredential = await signInWithCredential(auth, GoogleAuthProvider.credential(null, authTokenResult.token));
+
+    return userCredential;
+  };
+
+  const browserSignin = async () => {
+    if (!auth) {
+      return;
+    }
+
+    const provider = new GoogleAuthProvider();
+    provider.addScope("email");
+    provider.setCustomParameters({
+      prompt: "select_account",
+    });
+
+    const userCredential = await signInWithPopup(auth, provider);
+
+    return userCredential;
+  };
+
+  async function handleGoogleSignIn() {
+    if (!auth) return;
+    authError = "";
+    authLoading = true;
+
+    try {
+      if (appContext.isExtension) {
+        // Inside extension service workers / popups, we use chrome.identity.getAuthToken
+        await extensionSignin();
+      } else {
+        // Standard Web mode
+        await browserSignin();
+        authLoading = false;
+      }
+    } catch (err: any) {
+      console.error("Google sign in failed:", err);
+      authError = err.message || "Google sign in failed.";
+      authLoading = false;
+    }
+  }
+
+  async function handleSignOut() {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+      currentUser = null;
+      rules = await loadAllRules();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function handleToggleHeaderActive(ruleId: string, type: "request" | "response", headerIndex: number) {
+    const updatedRules = rules.map((r) => {
+      if (r.id === ruleId) {
+        const headers = type === "request" ? r.requestHeaders : r.responseHeaders;
+        if (headers && headers[headerIndex]) {
+          headers[headerIndex].isActive = headers[headerIndex].isActive === false ? true : false;
+        }
+      }
+      return r;
+    });
+
+    // Save and re-apply rules to browser DNR
+    const ruleToSave = updatedRules.find((r) => r.id === ruleId);
+    if (ruleToSave) {
+      rules = await saveRule(ruleToSave);
+    }
+  }
+</script>
+
+{#if !authChecked && hasFirebaseConfig}
+  <div
+    style="display: flex; justify-content: center; align-items: center; height: 100dvh; flex-direction: column; gap: 1rem;"
+  >
+    <div class="spinner"></div>
+    <p>Checking authentication state...</p>
+  </div>
+{:else if hasFirebaseConfig && !currentUser}
+  <div class="login-overlay">
+    <div class="card auth-card login-modal">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <h1 style="font-size: 1.5rem; margin-bottom: 0.5rem; color: #007bff;">Request Modifier Pro</h1>
+        <p style="color: #666; font-size: 0.9rem;">Please sign in to access your request modification rules.</p>
+      </div>
+
+      {#if authError}
+        <div class="error-msg">{authError}</div>
+      {/if}
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" bind:value={authEmail} placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" bind:value={authPassword} placeholder="••••••••" />
+      </div>
+      <div class="auth-buttons">
+        <button class="btn btn-primary" onclick={handleAuth} disabled={authLoading} style="width: 100%;">
+          {authLoading ? "Please wait..." : isRegistering ? "Sign Up" : "Sign In"}
+        </button>
+
+        <button
+          class="btn btn-secondary google-btn"
+          onclick={handleGoogleSignIn}
+          disabled={authLoading}
+          style="margin-top: 0.5rem; display: flex; gap: 0.5rem; width: 100%; justify-content: center; background: #ea4335; color: white;"
+        >
+          <svg style="width: 18px; height: 18px;" viewBox="0 0 24 24">
+            <path
+              fill="currentColor"
+              d="M21.35,11.1H12V12.9H18c-0.22,1.25-1.04,2.3-2.15,3L17.5,17.4A8.86,8.86,0,0,0,21.35,11.1Z"
+            />
+            <path
+              fill="currentColor"
+              d="M12,21.35A8.86,8.86,0,0,0,18,17.4L16.35,15.9A5.6,5.6,0,0,1,12,18a5.55,5.63,0,0,1-5.18-3.83L5.18,15.42A8.93,8.93,0,0,0,12,21.35Z"
+            />
+            <path fill="currentColor" d="M6.82,14.17A5.55,5.63,0,0,1,6.82,9.83L5.18,8.58A8.93,8.93,0,0,0,5.18,15.42Z" />
+            <path
+              fill="currentColor"
+              d="M12,6A5.55,5.63,0,0,1,16.35,8.1L17.7,6.75A8.93,8.93,0,0,0,12,2.65,8.93,8.93,0,0,0,5.18,8.58L6.82,9.83A5.55,5.63,0,0,1,12,6Z"
+            />
+          </svg>
+          Sign in with Google
+        </button>
+
+        <button
+          class="btn btn-link"
+          onclick={() => (isRegistering = !isRegistering)}
+          style="margin-top: 0.5rem; width: 100%; text-align: center;"
+        >
+          {isRegistering ? "Already have an account? Sign In" : "Need an account? Sign Up"}
+        </button>
+      </div>
+    </div>
+  </div>
+{:else}
+  <div class="container">
+    <!-- Sidebar/Auth Info -->
+    <aside class="auth-section">
+      {#if !hasFirebaseConfig}
+        <div class="card warning">
+          <h3>Local Only Mode</h3>
+          <p>Firebase credentials are not set in <code>.env</code>. Rules will be saved locally to this device.</p>
+        </div>
+      {:else if currentUser}
+        <div class="card success">
+          <div class="avatar-container">
+            {#if currentUser.photoURL}
+              <img class="avatar" src={currentUser.photoURL} alt={currentUser.displayName || "Avatar"} />
+            {:else}
+              <div class="avatar-placeholder">{currentUser.email?.charAt(0).toUpperCase()}</div>
+            {/if}
+            <div class="user-meta">
+              <span class="user-title">Cloud Account</span>
+              <span class="user-email" title={currentUser.email}>{currentUser.email}</span>
+            </div>
+          </div>
+          <button
+            class="btn btn-danger btn-sm"
+            onclick={handleSignOut}
+            style="width: 100%; margin-top: 1rem; border-radius: 6px;">Sign Out</button
+          >
+        </div>
+      {/if}
+
+      <div class="card mode-badge">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem;">
+          <h3 style="margin: 0;">Connection</h3>
+          {#if appContext.isExtension}
+            <label
+              class="switch"
+              title="Toggle entire extension enable/disable state"
+              aria-label="Toggle entire extension globally"
+            >
+              <input type="checkbox" checked={appContext.isExtensionEnabled} onchange={handleToggleGlobalEnabled} />
+              <span class="slider round"></span>
+            </label>
+          {/if}
+        </div>
+        {#if appContext.isExtension}
+          {#if appContext.isExtensionEnabled}
+            <div class="status-indicator">
+              <span class="pulse-dot pulse-success"></span>
+              <span class="badge-text" style="color: var(--success-color); font-weight: 600;">Extension Active</span>
+            </div>
+            <p class="mode-desc">Modifications are being actively applied to outgoing HTTP requests.</p>
+          {:else}
+            <div class="status-indicator">
+              <span
+                class="pulse-dot pulse-danger"
+                style="background-color: var(--danger-color); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);"
+              ></span>
+              <span class="badge-text" style="color: var(--danger-color); font-weight: 600;">Extension Paused</span>
+            </div>
+            <p class="mode-desc">Rules are temporarily suspended because the extension is disabled globally.</p>
+          {/if}
+        {:else}
+          <div class="status-indicator">
+            <span class="pulse-dot pulse-warning"></span>
+            <span class="badge-text" style="color: var(--warning-color); font-weight: 600;">Dashboard Mode</span>
+          </div>
+          <p class="mode-desc">Sync and manage rules here. Install the extension to modify request traffic.</p>
+        {/if}
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      {#if showForm}
+        <section class="card rule-form">
+          <h2>{editingId ? "Edit Rule" : "New Rule"}</h2>
+
+          <div class="form-group">
+            <label for="rule-name">Rule Name</label>
+            <input
+              type="text"
+              id="rule-name"
+              bind:value={ruleName}
+              placeholder="e.g., Redirect Mock API, Block Analytics..."
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="rule-type">Action Type</label>
+              <div class="select-wrapper">
+                <select id="rule-type" bind:value={ruleType}>
+                  <option value="modifyHeaders">Modify Headers</option>
+                  <option value="block">Block Request</option>
+                  <option value="redirect">Redirect Request</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="url-filter">URL Filter pattern</label>
+              <input type="text" id="url-filter" bind:value={urlFilter} placeholder="e.g., *://*.doubleclick.net/*" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <span style="font-weight: bold; font-size: 0.875rem; margin-bottom: 0.5rem; display: block;"
+              >Resource Types to Match</span
+            >
+            <div class="checkbox-grid">
+              {#each availableResourceTypes as type}
+                <label class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    value={type}
+                    checked={selectedResourceTypes.includes(type)}
+                    onchange={(e) => {
+                      if (e.currentTarget.checked) {
+                        selectedResourceTypes = [...selectedResourceTypes, type];
+                      } else {
+                        selectedResourceTypes = selectedResourceTypes.filter((t) => t !== type);
+                      }
+                    }}
+                  />
+                  {type}
+                </label>
+              {/each}
+            </div>
+          </div>
+
+          {#if ruleType === "redirect"}
+            <div class="form-group">
+              <label for="redirect-url">Redirect Target URL</label>
+              <input
+                type="text"
+                id="redirect-url"
+                bind:value={redirectUrl}
+                placeholder="https://example.com/mock.json"
+              />
+            </div>
+          {/if}
+
+          {#if ruleType === "modifyHeaders"}
+            <div class="headers-config">
+              <h3 class="headers-section-title">Request Headers</h3>
+              {#each requestHeaders as h, i}
+                <div class="header-row" class:header-row-inactive={h.isActive === false}>
+                  <div style="display: flex; align-items: center; justify-content: center;">
+                    <input
+                      type="checkbox"
+                      checked={h.isActive !== false}
+                      onchange={(e) => {
+                        h.isActive = e.currentTarget.checked;
+                      }}
+                      aria-label="Toggle request header active"
+                      style="width: 1.1rem; height: 1.1rem; cursor: pointer; accent-color: var(--primary-color);"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Header Name (e.g., User-Agent)"
+                    bind:value={h.header}
+                    aria-label="Request Header Name"
+                    disabled={h.isActive === false}
+                  />
+                  <div class="select-wrapper">
+                    <select bind:value={h.operation} aria-label="Operation" disabled={h.isActive === false}>
+                      <option value="set">Set / Overwrite</option>
+                      <option value="append">Append</option>
+                      <option value="remove">Remove</option>
+                    </select>
+                  </div>
+                  {#if h.operation !== "remove"}
+                    <input
+                      type="text"
+                      placeholder="Value"
+                      bind:value={h.value}
+                      aria-label="Value"
+                      disabled={h.isActive === false}
+                    />
+                  {:else}
+                    <div></div>
+                  {/if}
+                  <button
+                    class="btn btn-icon btn-danger"
+                    onclick={() => removeHeaderRow("request", i)}
+                    aria-label="Remove header row">✕</button
+                  >
+                </div>
+              {/each}
+              <button class="btn btn-secondary btn-sm" onclick={() => addHeaderRow("request")}
+                >+ Add Request Header</button
+              >
+
+              <h3 class="headers-section-title" style="margin-top: 1.5rem;">Response Headers</h3>
+              {#each responseHeaders as h, i}
+                <div class="header-row" class:header-row-inactive={h.isActive === false}>
+                  <div style="display: flex; align-items: center; justify-content: center;">
+                    <input
+                      type="checkbox"
+                      checked={h.isActive !== false}
+                      onchange={(e) => {
+                        h.isActive = e.currentTarget.checked;
+                      }}
+                      aria-label="Toggle response header active"
+                      style="width: 1.1rem; height: 1.1rem; cursor: pointer; accent-color: var(--success-color);"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Header Name (e.g., Access-Control-Allow-Origin)"
+                    bind:value={h.header}
+                    aria-label="Response Header Name"
+                    disabled={h.isActive === false}
+                  />
+                  <div class="select-wrapper">
+                    <select bind:value={h.operation} aria-label="Operation" disabled={h.isActive === false}>
+                      <option value="set">Set / Overwrite</option>
+                      <option value="append">Append</option>
+                      <option value="remove">Remove</option>
+                    </select>
+                  </div>
+                  {#if h.operation !== "remove"}
+                    <input
+                      type="text"
+                      placeholder="Value"
+                      bind:value={h.value}
+                      aria-label="Value"
+                      disabled={h.isActive === false}
+                    />
+                  {:else}
+                    <div></div>
+                  {/if}
+                  <button
+                    class="btn btn-icon btn-danger"
+                    onclick={() => removeHeaderRow("response", i)}
+                    aria-label="Remove header row">✕</button
+                  >
+                </div>
+              {/each}
+              <button class="btn btn-secondary btn-sm" onclick={() => addHeaderRow("response")}
+                >+ Add Response Header</button
+              >
+            </div>
+          {/if}
+
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick={handleSaveRule}>Save Rule</button>
+            <button class="btn btn-secondary" onclick={resetForm}>Cancel</button>
+          </div>
+        </section>
+      {:else}
+        <section class="rules-dashboard">
+          <div class="dashboard-header">
+            <h2>Active Rules ({rules.length})</h2>
+            <button class="btn btn-success" onclick={() => (showForm = true)}>+ New Rule</button>
+          </div>
+
+          {#if rules.length === 0}
+            <div class="card empty-state">
+              <p>No request modification rules found. Click "+ New Rule" to create your first rule!</p>
+            </div>
+          {:else}
+            <div class="rules-list">
+              {#each rules as rule (rule.id)}
+                <div class="card rule-item" class:inactive={!rule.isActive}>
+                  <div class="rule-status-toggle">
+                    <input
+                      type="checkbox"
+                      id="toggle-{rule.id}"
+                      checked={rule.isActive}
+                      onchange={() => handleToggleActive(rule.id)}
+                      aria-label="Toggle rule active"
+                    />
+                  </div>
+                  <div class="rule-details">
+                    <div class="rule-title-row">
+                      <span class="rule-name">{rule.name}</span>
+                      <span class="badge badge-type badge-{rule.type}">{rule.type}</span>
+                    </div>
+                    <div class="rule-meta">
+                      <span class="meta-label">Matches:</span> <code>{rule.urlFilter || "*"}</code>
+                    </div>
+                    {#if rule.type === "redirect"}
+                      <div class="rule-meta">
+                        <span class="meta-label">Redirect to:</span> <code>{rule.redirectUrl}</code>
+                      </div>
+                    {:else if rule.type === "modifyHeaders"}
+                      {#if rule.requestHeaders && rule.requestHeaders.length > 0}
+                        <div class="header-pills">
+                          <span class="meta-label">Request:</span>
+                          {#each rule.requestHeaders as h, hIdx}
+                            <span
+                              class="pill clickable-pill"
+                              class:pill-disabled={h.isActive === false}
+                              onclick={() => handleToggleHeaderActive(rule.id, "request", hIdx)}
+                              role="button"
+                              tabindex="0"
+                              onkeydown={(e) => e.key === "Enter" && handleToggleHeaderActive(rule.id, "request", hIdx)}
+                            >
+                              <span class="pill-dot" class:pill-dot-active={h.isActive !== false}></span>
+                              <strong style="color: var(--primary-color);">{h.operation}</strong>
+                              {h.header}: <span class="pill-value">{h.value}</span>
+                            </span>
+                          {/each}
+                        </div>
+                      {/if}
+                      {#if rule.responseHeaders && rule.responseHeaders.length > 0}
+                        <div class="header-pills">
+                          <span class="meta-label">Response:</span>
+                          {#each rule.responseHeaders as h, hIdx}
+                            <span
+                              class="pill clickable-pill"
+                              class:pill-disabled={h.isActive === false}
+                              onclick={() => handleToggleHeaderActive(rule.id, "response", hIdx)}
+                              role="button"
+                              tabindex="0"
+                              onkeydown={(e) =>
+                                e.key === "Enter" && handleToggleHeaderActive(rule.id, "response", hIdx)}
+                            >
+                              <span class="pill-dot" class:pill-dot-active={h.isActive !== false}></span>
+                              <strong style="color: var(--success-color);">{h.operation}</strong>
+                              {h.header}: <span class="pill-value">{h.value}</span>
+                            </span>
+                          {/each}
+                        </div>
+                      {/if}
+                    {/if}
+                  </div>
+                  <div class="rule-actions">
+                    <button class="btn btn-sm btn-secondary" onclick={() => handleEdit(rule)} aria-label="Edit rule"
+                      >Edit</button
+                    >
+                    <button class="btn btn-sm btn-danger" onclick={() => handleDelete(rule.id)} aria-label="Delete rule"
+                      >Delete</button
+                    >
+                  </div>
+                </div>
+              {/each}
+            </div>
+          {/if}
+        </section>
+      {/if}
+    </main>
+  </div>
+{/if}
+
+<style>
+  .container {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.5rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 1.5rem;
+  }
+
+  @media (max-width: 960px) {
+    .container {
+      grid-template-columns: 1fr;
+      padding: 1rem;
+    }
+    .auth-section {
+      display: none;
+    }
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.05),
+      0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    transition:
+      transform 0.2s,
+      box-shadow 0.2s;
+  }
+
+  .card.warning {
+    border-color: var(--warning-color);
+    background-color: light-dark(#fffbeb, #221500);
+  }
+
+  .card.success {
+    border-color: var(--success-color);
+    background-color: light-dark(#f0fdf4, #041f0e);
+  }
+
+  /* User Avatar Container for Premium Sidebar */
+  .avatar-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid var(--primary-color);
+    object-fit: cover;
+  }
+
+  .avatar-placeholder {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--primary-color);
+    color: white;
+    font-weight: bold;
+    font-size: 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .user-meta {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .user-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .user-email {
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  /* Status Indicator Connection Badge */
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+
+  .pulse-success {
+    background-color: var(--success-color);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: pulse 1.6s infinite;
+  }
+
+  .pulse-warning {
+    background-color: var(--warning-color);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+    animation: pulse 1.6s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+      transform: scale(1);
+      box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    }
+    100% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+  }
+
+  .error-msg {
+    color: var(--danger-color);
+    font-size: 0.875rem;
+    background-color: light-dark(#fef2f2, #2d1010);
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--danger-color);
+    margin-bottom: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+  }
+
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  select {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--card-bg);
+    color: inherit;
+    font-size: 0.95rem;
+    outline: none;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+  }
+
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus,
+  select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+
+  /* Custom styled select wrappers */
+  .select-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .select-wrapper select {
+    width: 100%;
+    appearance: none;
+    padding-right: 2.5rem;
+  }
+
+  .select-wrapper::after {
+    content: "▼";
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    position: absolute;
+    right: 1rem;
+    pointer-events: none;
+  }
+
+  .btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.925rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition:
+      background-color 0.2s,
+      transform 0.1s,
+      opacity 0.2s;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
+
+  .btn:active {
+    transform: scale(0.98);
+  }
+
+  .btn-sm {
+    padding: 0.45rem 1rem;
+    font-size: 0.825rem;
+    border-radius: 6px;
+  }
+
+  .btn-primary {
+    background: var(--primary-color);
+    color: white;
+  }
+  .btn-primary:hover {
+    background: var(--primary-hover);
+  }
+
+  .btn-secondary {
+    background: var(--border-color);
+    color: var(--text-color);
+  }
+  .btn-secondary:hover {
+    opacity: 0.85;
+  }
+
+  .btn-success {
+    background: var(--success-color);
+    color: white;
+  }
+  .btn-success:hover {
+    filter: brightness(1.1);
+  }
+
+  .btn-danger {
+    background: var(--danger-color);
+    color: white;
+  }
+  .btn-danger:hover {
+    filter: brightness(1.1);
+  }
+
+  .btn-link {
+    background: transparent;
+    color: var(--primary-color);
+    text-decoration: none;
+    font-weight: 500;
+    box-shadow: none;
+  }
+  .btn-link:hover {
+    text-decoration: underline;
+  }
+
+  .btn-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    border-radius: 8px;
+  }
+
+  .checkbox-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 0.75rem;
+    background: var(--bg-color);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-color);
+  }
+
+  .checkbox-label input {
+    accent-color: var(--primary-color);
+    width: 1.1rem;
+    height: 1.1rem;
+    cursor: pointer;
+  }
+
+  .headers-config {
+    margin-top: 1.75rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .headers-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+    display: flex;
+    align-items: center;
+  }
+
+  .header-row {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 2fr auto;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    align-items: center;
+  }
+
+  /* Updated layout with toggle column */
+  .headers-config .header-row {
+    grid-template-columns: 40px 2fr 1.5fr 2fr auto;
+  }
+
+  .header-row-inactive {
+    opacity: 0.6;
+  }
+
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1.5rem;
+  }
+
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.75rem;
+  }
+
+  .dashboard-header h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-muted);
+    padding: 4rem 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    border: 2px dashed var(--border-color);
+    background: transparent;
+  }
+
+  .rule-item {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    transition:
+      opacity 0.2s,
+      box-shadow 0.2s,
+      border-color 0.2s;
+    border-left: 4px solid var(--primary-color);
+  }
+
+  .rule-item.inactive {
+    opacity: 0.65;
+    border-left-color: var(--text-muted);
+  }
+
+  .rule-item:hover {
+    box-shadow:
+      0 10px 15px -3px rgba(0, 0, 0, 0.05),
+      0 4px 6px -2px rgba(0, 0, 0, 0.02);
+    border-color: var(--primary-color);
+  }
+
+  .rule-status-toggle {
+    display: flex;
+    align-items: center;
+  }
+
+  .rule-status-toggle input {
+    width: 1.4rem;
+    height: 1.4rem;
+    cursor: pointer;
+    accent-color: var(--success-color);
+  }
+
+  .rule-details {
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .rule-title-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .rule-name {
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--text-color);
+  }
+
+  .badge {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  .badge-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--warning-color);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+  }
+
+  .badge-type {
+    text-transform: uppercase;
+  }
+  .badge-modifyHeaders {
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+  }
+  .badge-block {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--danger-color);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+  }
+  .badge-redirect {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--primary-color);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+
+  .rule-meta {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .meta-label {
+    font-weight: 600;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .rule-meta code {
+    background: var(--bg-color);
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.85rem;
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+  }
+
+  .header-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    align-items: center;
+    font-size: 0.825rem;
+    margin-top: 0.6rem;
+  }
+
+  .pill {
+    background: var(--bg-color);
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    font-weight: 500;
+  }
+
+  .clickable-pill {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    user-select: none;
+    transition:
+      background-color 0.2s,
+      opacity 0.2s,
+      border-color 0.2s;
+  }
+
+  .clickable-pill:hover {
+    background: var(--border-color);
+    border-color: var(--text-muted);
+  }
+
+  .pill-disabled {
+    opacity: 0.5;
+    background: transparent;
+    text-decoration: line-through;
+  }
+
+  .pill-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--text-muted);
+    transition: background-color 0.2s;
+  }
+
+  .pill-dot-active {
+    background-color: var(--success-color);
+  }
+
+  .rule-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .mode-badge {
+    background: var(--card-bg);
+  }
+
+  .mode-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+    line-height: 1.4;
+  }
+
+  /* Login Overlay and Spinner styles */
+  .login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    padding: 1rem;
+  }
+
+  .login-modal {
+    width: 100%;
+    max-width: 420px;
+    padding: 2.5rem;
+    box-shadow:
+      0 20px 25px -5px rgba(0, 0, 0, 0.15),
+      0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+  }
+
+  .spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-top: 4px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  /* Premium Toggle Switch */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+  }
+
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: 0.3s;
+    border-radius: 24px;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+  }
+
+  input:checked + .slider {
+    background-color: var(--success-color);
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(20px);
+  }
+</style>

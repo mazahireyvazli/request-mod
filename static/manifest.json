@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Request Modifier Pro",
+  "version": "1.0.0",
+  "description": "Modify HTTP request headers, cookies, block or redirect requests. Syncs across devices with Firebase.",
+  "permissions": ["declarativeNetRequest", "storage", "identity"],
+  "host_permissions": ["http://*/*", "https://*/*"],
+  "action": {
+    "default_popup": "index.html"
+  },
+  "oauth2": {
+    "client_id": "669219191683-h8cucrvep0b89ivquovetnru2k4rlrb4.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/userinfo.email"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
