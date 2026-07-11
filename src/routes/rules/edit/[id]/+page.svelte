@@ -153,23 +153,6 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <span class="group-label">Resource Types to Match</span>
-          <div class="checkbox-grid">
-            {#each availableResourceTypes as type}
-              <label class="checkbox-label">
-                <input
-                  type="checkbox"
-                  value={type}
-                  checked={rule.resourceTypes.includes(type)}
-                  onchange={(e) => toggleResourceType(type, e.currentTarget.checked)}
-                />
-                {type}
-              </label>
-            {/each}
-          </div>
-        </div>
-
         {#if rule.type === "redirect"}
           <div class="form-group">
             <label for="redirect-url">Redirect Target URL</label>
@@ -187,12 +170,14 @@
             <h3 class="headers-section-title">Request Headers</h3>
             {#each rule.requestHeaders as h, i (i)}
               <div class="header-row">
-                <input
-                  type="checkbox"
-                  checked={h.isActive !== false}
-                  onchange={(e) => (h.isActive = e.currentTarget.checked)}
-                  aria-label="Toggle request header active"
-                />
+                <div class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={h.isActive !== false}
+                    onchange={(e) => (h.isActive = e.currentTarget.checked)}
+                    aria-label="Toggle request header active"
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="Header Name (e.g., User-Agent)"
@@ -218,25 +203,27 @@
                 {/if}
                 <button
                   type="button"
-                  class="btn-danger"
+                  class="btn btn-danger"
                   onclick={() => removeHeaderRow("request", i)}
                   aria-label="Remove header row">✕</button
                 >
               </div>
             {/each}
-            <button type="button" class="btn-secondary" onclick={() => addHeaderRow("request")}
+            <button type="button" class="btn btn-secondary" onclick={() => addHeaderRow("request")}
               >+ Add Request Header</button
             >
 
             <h3 class="headers-section-title">Response Headers</h3>
             {#each rule.responseHeaders as h, i (i)}
               <div class="header-row">
-                <input
-                  type="checkbox"
-                  checked={h.isActive !== false}
-                  onchange={(e) => (h.isActive = e.currentTarget.checked)}
-                  aria-label="Toggle response header active"
-                />
+                <div class="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={h.isActive !== false}
+                    onchange={(e) => (h.isActive = e.currentTarget.checked)}
+                    aria-label="Toggle response header active"
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="Header Name (e.g., Content-Type)"
@@ -262,17 +249,34 @@
                 {/if}
                 <button
                   type="button"
-                  class="btn-danger"
+                  class="btn btn-danger"
                   onclick={() => removeHeaderRow("response", i)}
                   aria-label="Remove header row">✕</button
                 >
               </div>
             {/each}
-            <button type="button" class="btn-secondary" onclick={() => addHeaderRow("response")}
+            <button type="button" class="btn btn-secondary" onclick={() => addHeaderRow("response")}
               >+ Add Response Header</button
             >
           </div>
         {/if}
+
+        <div class="form-group">
+          <span class="group-label">Resource Types to Match</span>
+          <div class="checkbox-grid">
+            {#each availableResourceTypes as type}
+              <label class="checkbox-label">
+                <input
+                  type="checkbox"
+                  value={type}
+                  checked={rule.resourceTypes.includes(type)}
+                  onchange={(e) => toggleResourceType(type, e.currentTarget.checked)}
+                />
+                {type}
+              </label>
+            {/each}
+          </div>
+        </div>
 
         {#if errorMessage}
           <p class="error-message">{errorMessage}</p>
