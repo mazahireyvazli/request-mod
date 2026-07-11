@@ -61,7 +61,6 @@ const config = {
     },
 
     files: {
-      appTemplate: ".svelte-kit/temp-app.html",
       serviceWorker: "src/sw.ts",
     },
 
