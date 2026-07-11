@@ -8,5 +8,9 @@
     "source.organizeImports": "explicit"
   },
 
-  "typescript.preferences.importModuleSpecifier": "non-relative"
+  "[svelte]": {
+    "editor.defaultFormatter": "svelte.svelte-vscode"
+  },
+
+  "js/ts.preferences.importModuleSpecifier": "non-relative"
 }

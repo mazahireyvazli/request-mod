@@ -8,7 +8,6 @@
   import { auth, db } from "$lib/client/firebase";
   import { removeAllDNRRules, updateExtensionDNRRules } from "$lib/client/rules_manager";
   import Header from "$lib/components/Header/Header.svelte";
-// import LoginModal from "$lib/components/LoginModal/LoginModal.svelte";
   import { onAuthStateChanged } from "firebase/auth";
   import { collection, doc, onSnapshot } from "firebase/firestore";
   import { onMount, type Component } from "svelte";
@@ -88,7 +87,7 @@
     if (!auth) return;
 
     onAuthStateChanged(auth, async (user) => {
-      if(!user) {
+      if (!user) {
         loadLoginModalComponent();
       }
 
@@ -178,6 +177,13 @@
           <LazyLoginModal />
         {/await}
       {/if}
+    {:else if appContext.rules === undefined}
+      <div
+        style="display: flex; justify-content: center; align-items: center; height: 100dvh; flex-direction: column; gap: 1rem;"
+      >
+        <div class="spinner"></div>
+        <p>Loading data...</p>
+      </div>
     {:else}
       {@render children()}
     {/if}
