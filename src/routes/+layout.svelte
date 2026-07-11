@@ -1,7 +1,6 @@
 <script lang="ts">
   import "$lib/assets/css/global.css";
 
-  import { dev } from "$app/environment";
   import { onNavigate } from "$app/navigation";
   import favicon from "$lib/assets/favicon.svg";
   import { setAppContext, type DBUser, type RequestRule } from "$lib/client/app_context.svelte";
@@ -51,36 +50,6 @@
         await navigation.complete;
       });
     });
-  });
-
-  onMount(() => {
-    if (!dev && "serviceWorker" in navigator && location.protocol !== "chrome-extension:") {
-      const script_url = "/service-worker.js";
-      navigator.serviceWorker.register(script_url, { type: "module" }).then(
-        (registration) => {
-          console.log("Service worker registration succeeded", performance.now());
-
-          registration.addEventListener("updatefound", () => {
-            appContext.isUpdateAvailable = true;
-
-            console.log("Service Worker update available");
-          });
-
-          navigator.serviceWorker.addEventListener(
-            "controllerchange",
-            () => {
-              console.log("Service Worker controller changed");
-
-              location.reload();
-            },
-            { once: true },
-          );
-        },
-        (error) => {
-          console.error(`Service worker registration failed`, error);
-        },
-      );
-    }
   });
 
   onMount(() => {

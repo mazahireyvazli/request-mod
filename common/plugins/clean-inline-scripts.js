@@ -20,7 +20,7 @@ if (fs.existsSync(htmlPath)) {
     const externalScriptPath = path.join(buildDir, externalScriptName);
 
     // Save the inline script code into an external file
-    fs.writeFileSync(externalScriptPath, inlineScriptContent, "utf-8");
+    fs.appendFileSync(externalScriptPath, inlineScriptContent, "utf-8");
     console.log(`Extracted SvelteKit inline script to ${externalScriptName}`);
 
     // Replace inline script with external script reference
