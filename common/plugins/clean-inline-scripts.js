@@ -21,10 +21,14 @@ if (fs.existsSync(htmlPath)) {
 
     // Save the inline script code into an external file
     fs.appendFileSync(externalScriptPath, inlineScriptContent, "utf-8");
-    console.log(`Extracted SvelteKit inline script to ${externalScriptName}`);
+
+    const externalScriptNameWithTimestamp = `${Date.now()}_${externalScriptName}`;
+
+    fs.renameSync(externalScriptPath, path.join(buildDir, externalScriptNameWithTimestamp));
+    console.log(`Extracted SvelteKit inline script to ${externalScriptNameWithTimestamp}`);
 
     // Replace inline script with external script reference
-    html = html.replace(scriptRegex, `<script src="./${externalScriptName}"></script>`);
+    html = html.replace(scriptRegex, `<script src="./${externalScriptNameWithTimestamp}"></script>`);
     // Ensure all absolute paths in build/index.html to svelte kit scripts/assets are relative for chrome-extension:// protocol
     html = html.replaceAll('src="/', 'src="./');
     html = html.replaceAll('href="/', 'href="./');
