@@ -25,6 +25,8 @@ const ASSETS = [
 ];
 
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
+
   async function addAssetsToCache() {
     const cache = await self.caches.open(ASSETS_CACHE);
     await cache.addAll(ASSETS);

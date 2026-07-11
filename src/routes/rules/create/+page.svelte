@@ -92,9 +92,20 @@
   <Sidebar />
 
   <section>
-    <h1>Create rule</h1>
+    <div class="page-header">
+      <div class="page-header-left">
+        <a href="#/" class="btn btn-secondary btn-icon" aria-label="Go back"> ← </a>
+        <h1>Create rule</h1>
+      </div>
 
-    <form onsubmit={handleCreateRule}>
+      <div class="page-header-actions">
+        <button type="submit" form="rule-form" class="btn btn-primary" disabled={isSubmitting}>
+          {isSubmitting ? "Creating..." : "Create Rule"}
+        </button>
+      </div>
+    </div>
+
+    <form id="rule-form" onsubmit={handleCreateRule}>
       <div class="form-row">
         <div class="form-group">
           <label for="rule-id">ID</label>
@@ -260,12 +271,6 @@
       {#if errorMessage}
         <p class="error-message">{errorMessage}</p>
       {/if}
-
-      <div class="form-actions">
-        <button type="submit" class="btn-primary" disabled={isSubmitting}>
-          {isSubmitting ? "Creating..." : "Create Rule"}
-        </button>
-      </div>
     </form>
   </section>
 </div>

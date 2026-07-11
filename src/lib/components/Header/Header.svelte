@@ -32,7 +32,7 @@
   <div class="header-inner">
     <div class="header-left">
       <a href="#/" class="logo">Request Modifier Pro</a>
-      
+
       <div class="header-status">
         Status: {status.name}
         {#if status.loader}
@@ -41,43 +41,45 @@
           </div>
         {/if}
 
-        {#if appContext.isUpdateAvailable}
-          <button
-            class="update-button"
-            onclick={async () => {
-              updating = true;
-              const registration = await navigator.serviceWorker.getRegistration();
-              if (registration?.waiting) {
-                registration.waiting.postMessage({ type: "SKIP_WAITING" });
-                return;
-              }
+        {#if !appContext.isExtension}
+          {#if appContext.isUpdateAvailable}
+            <button
+              class="update-button"
+              onclick={async () => {
+                updating = true;
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration?.waiting) {
+                  registration.waiting.postMessage({ type: "SKIP_WAITING" });
+                  return;
+                }
 
-              updating = false;
-            }}
-          >
-            {#if updating}
-              <img src={svgLoader} alt="loader" width="16" height="16" />
-            {/if}
-            Update
-          </button>
-        {:else}
-          <button
-            class="update-button"
-            disabled={checking_update}
-            onclick={async () => {
-              checking_update = true;
-              const registration = await navigator.serviceWorker.getRegistration();
-              await registration?.update();
+                updating = false;
+              }}
+            >
+              {#if updating}
+                <img src={svgLoader} alt="loader" width="16" height="16" />
+              {/if}
+              Update
+            </button>
+          {:else}
+            <button
+              class="update-button"
+              disabled={checking_update}
+              onclick={async () => {
+                checking_update = true;
+                const registration = await navigator.serviceWorker.getRegistration();
+                await registration?.update();
 
-              if (registration?.waiting) {
-                appContext.isUpdateAvailable = true;
-              }
+                if (registration?.waiting) {
+                  appContext.isUpdateAvailable = true;
+                }
 
-              checking_update = false;
-            }}
-          >
-            Check updates
-          </button>
+                checking_update = false;
+              }}
+            >
+              Check updates
+            </button>
+          {/if}
         {/if}
       </div>
     </div>
