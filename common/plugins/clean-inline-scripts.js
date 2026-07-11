@@ -16,7 +16,7 @@ if (fs.existsSync(htmlPath)) {
     // Resolve absolute imports in the extracted initializer script too
     inlineScriptContent = inlineScriptContent.replaceAll('import("/', 'import("./');
 
-    const externalScriptName = "start-sveltekit.js";
+    const externalScriptName = `start-sveltekit-${Date.now()}.js`;
     const externalScriptPath = path.join(buildDir, externalScriptName);
 
     // Save the inline script code into an external file
