@@ -24,8 +24,8 @@ const ASSETS = [
   ...files, // everything in `static`
 ];
 
-self.addEventListener("install", (event) => {
-  self.skipWaiting();
+self.addEventListener("install", async (event) => {
+  await self.skipWaiting();
 
   async function addAssetsToCache() {
     const cache = await self.caches.open(ASSETS_CACHE);
