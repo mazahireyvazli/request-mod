@@ -2,14 +2,11 @@
   import { getAppContext } from "$lib/client/app_context.svelte";
   import { auth } from "$lib/client/firebase";
   import { storeExtensionEnabled } from "$lib/client/firestore";
-  import { signOut } from "firebase/auth";
 
   const appContext = getAppContext();
   let dropdownRef: HTMLDivElement | null = null;
 
-
   async function toggleExtension(e: Event) {
-
     if (!appContext.authUser) {
       console.error("No authenticated user found.");
       return;
@@ -17,13 +14,13 @@
 
     const target = e.target as HTMLInputElement;
     const isEnabled = target.checked;
-    
+
     storeExtensionEnabled(appContext.authUser?.uid, isEnabled);
   }
 
   async function handleSignOut() {
     if (auth) {
-      await signOut(auth);
+      await auth.signOut();
     }
     dropdownRef?.hidePopover();
   }
@@ -31,8 +28,20 @@
 
 <div class="settings-select">
   <button class="settings-select__toggle" popovertarget="settings-dropdown" aria-label="Settings">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="20" height="20">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z" />
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke-width="1.5"
+      stroke="currentColor"
+      width="20"
+      height="20"
+    >
+      <path
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z"
+      />
     </svg>
   </button>
   <div
@@ -44,9 +53,7 @@
     aria-label="Settings options"
   >
     <div class="settings-select__option" role="menuitem" style="display: flex; justify-content: space-between;">
-      <span style="display: flex; align-items: center; gap: 0.5rem;">
-        Enable Extension
-      </span>
+      <span style="display: flex; align-items: center; gap: 0.5rem;"> Enable Extension </span>
       <label class="switch">
         <input type="checkbox" checked={appContext.dbUser?.isExtensionEnabled} onchange={toggleExtension} />
         <span class="slider round"></span>
@@ -54,8 +61,20 @@
     </div>
     <button class="settings-select__option" role="menuitem" onclick={handleSignOut} style="width: 100%;">
       <span style="display: flex; align-items: center; justify-content: center;">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" width="16" height="16">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          width="16"
+          height="16"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"
+          />
         </svg>
       </span>
       <span>Sign out</span>
@@ -144,7 +163,7 @@
     right: 0;
     bottom: 0;
     background-color: var(--border-color, #ccc);
-    transition: .3s;
+    transition: 0.3s;
     border-radius: 24px;
   }
 
@@ -156,7 +175,7 @@
     left: 3px;
     bottom: 3px;
     background-color: white;
-    transition: .3s;
+    transition: 0.3s;
     border-radius: 50%;
   }
 

@@ -7,12 +7,11 @@
   import { auth, db } from "$lib/client/firebase";
   import { removeAllDNRRules, updateExtensionDNRRules } from "$lib/client/rules_manager";
   import Header from "$lib/components/Header/Header.svelte";
-  import { onAuthStateChanged } from "firebase/auth";
   import { collection, doc, onSnapshot } from "firebase/firestore";
   import { onMount, type Component } from "svelte";
   import type { LayoutProps } from "./$types";
 
-  let lazyLoginModalPromise: Promise<{ default: Component<any> }> | null = $state(null);
+  let lazyLoginModalPromise = $state<Promise<{ default: Component }> | null>(null);
   function loadLoginModalComponent(): void {
     // Only trigger the network request if it hasn't been initialized yet
     if (!lazyLoginModalPromise) {
@@ -55,7 +54,7 @@
   onMount(() => {
     if (!auth) return;
 
-    onAuthStateChanged(auth, async (user) => {
+    auth.onAuthStateChanged(async (user) => {
       if (!user) {
         loadLoginModalComponent();
       }
